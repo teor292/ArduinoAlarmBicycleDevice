@@ -14,6 +14,7 @@
 #include "sms.h"
 #include "scope_exit.h"
 #include "VibroStater.h"
+#include "BookReader.h"
 
 static const int RXPin = 8, TXPin = 9;
 static const uint32_t GPSBaud = 9600;
@@ -30,8 +31,8 @@ BatteryChecker battery_checker(battery);
 Sms sms_one(SIM800, reader, test_string);
 
 VibroStater vibro(5);
+BookReader adminer(SIM800, reader);
 
-createSafeString(admin_phone_number, 18);
 unsigned char send_alarm_on_low_battery = 1;
 
 const char GET_BATTERY[] = "get battery";
@@ -88,6 +89,19 @@ void setup()
   //will get sms and send it directly to software
   //withour saving to sms memory
   set_sms_mode(CMT_MODE);
+
+  adminer.LoadAdminPhone(test_string);
+  #ifdef DEBUG
+
+  if (adminer.IsEmpty())
+  {
+    Serial.println(F("Phone is empty"));
+    return;
+  }
+
+  Serial.println(adminer.GetAdminPhone());
+
+  #endif
 }
 
 bool set_sms_mode(const char *mode)
@@ -105,22 +119,22 @@ bool set_sms_mode(const char *mode)
 
 void loop() 
 {
-  if (!admin_phone_number.isEmpty())
+  if (!adminer.IsEmpty())
   {
     if (vibro.Update())
     {
-      sms_one.SetPhone(admin_phone_number);
+      sms_one.SetPhone(adminer.GetAdminPhone());
       sms_one.SendSms("!!! Vibro alarm !!!");
     }
   }
 
 
-  if (!admin_phone_number.isEmpty()
+  if (!adminer.IsEmpty()
     && send_alarm_on_low_battery
     && battery_checker.Check()
     && battery_checker.Update())
   {
-      sms_one.SetPhone(admin_phone_number);
+      sms_one.SetPhone(adminer.GetAdminPhone());
       sms_one.SendSms(battery_checker.GetData());
   }
 
@@ -142,7 +156,7 @@ void loop()
       PRINTLN(F("!sms mode"));
       return;
     }
-    
+
     EXIT_SCOPE_SIMPLE(
       sms_one.DeleteAllSms(test_string);
       set_sms_mode(CMT_MODE);
@@ -183,7 +197,7 @@ void loop()
     }
     if (sms_text == SET_ADMIN)
     {
-      admin_phone_number = sms_one.GetPhone();
+      adminer.SetAdminPhone(sms_one.GetPhone());
       sms_one.SendSms(OK);
       return;
     }
@@ -238,9 +252,9 @@ void loop()
         }
         return;
     }
-    
-    sms_one.SendSms("SMSTEXT");
-    PRINTLN(F("Returned from send sms"));
+    //if smth unknown -> do nothing
+    //sms_one.SendSms("SMSTEXT");
+    //PRINTLN(F("Returned from send sms"));
       
   }
 }

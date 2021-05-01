@@ -314,7 +314,7 @@ void Sms::SendSms(const char *text)
 }
 
 
-void Sms::SetPhone(SafeString& phone)
+void Sms::SetPhone(const char* phone)
 {
   createSafeStringFromCharArray(tmp, phone_);
   tmp = phone;

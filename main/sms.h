@@ -32,7 +32,7 @@ class Sms
 
         void SendSms(const char *text);
 
-        void SetPhone(SafeString& phone);
+        void SetPhone(const char* phone);
 
     private:
 
