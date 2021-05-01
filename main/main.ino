@@ -45,6 +45,8 @@ const char ON[] = "on";
 const char OFF[] = "off";
 const char ERROR[] = "Error";
 const char OK[] = "OK";
+const char CMT_MODE[] = "AT+CNMI=1,2,0,0,0";
+const char SILINCE_MODE[] = "AT+CNMI=0,0,0,0,0";
 
 bool get_signal_strength(SafeString& str);
 
@@ -85,8 +87,20 @@ void setup()
 
   //will get sms and send it directly to software
   //withour saving to sms memory
-  SIM800.println("AT+CNMI=1,2,0,0,0");
-  reader.ReadStatusResponse(test_string, 1000);
+  set_sms_mode(CMT_MODE);
+}
+
+bool set_sms_mode(const char *mode)
+{
+  SIM800.println(mode);
+  if (!reader.ReadUntil(test_string, 1000, mode))
+  {
+    PRINTLN(F("Read until failed"));
+    return false;
+  }
+  if (!reader.ReadLine(test_string, 1000)) return false;
+
+  return test_string.startsWith(OK);
 }
 
 void loop() 
@@ -123,6 +137,16 @@ void loop()
       PRINTLN(F("Error read CMT sms"));
       return;
     }
+    if (!set_sms_mode(SILINCE_MODE))
+    {
+      PRINTLN(F("!sms mode"));
+      return;
+    }
+    
+    EXIT_SCOPE_SIMPLE(
+      sms_one.DeleteAllSms(test_string);
+      set_sms_mode(CMT_MODE);
+      );
 
     char *text = sms_one.GetText();
     createSafeStringFromCharPtr(sms_text, text);

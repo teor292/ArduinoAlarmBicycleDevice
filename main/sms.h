@@ -19,6 +19,7 @@ class Sms
         explicit Sms(SoftwareSerial &serial, BlockTimeReader& reader, SafeString& g_string);
 #if defined(CMT)
         bool TryReadForwardSmsFromSerial(SafeString& result);
+        void DeleteAllSms(SafeString& buffer);
 #endif
 #if defined(CMGR)
         bool ReadFromSerial(SafeString& cmti);

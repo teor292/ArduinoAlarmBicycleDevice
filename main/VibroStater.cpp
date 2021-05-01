@@ -1,4 +1,5 @@
 #include "VibroStater.h"
+#include "header.h"
 #include <Arduino.h>
 
 #define ALARM_TIME 2 * 60 * 1000L //1 sms per two minutes
@@ -32,7 +33,7 @@ bool VibroStater::Update()
 
     if (current_state_ != previous_state_)
     {
-        Serial.println("VIBRO");
+        PRINTLN("VIBRO");
         ++current_count_changes_;
     }
 

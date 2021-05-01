@@ -84,3 +84,22 @@ bool BlockTimeReader::NClReadLine(SafeString& test_string, const int timeout)
 
     return false;
 }
+
+bool BlockTimeReader::ReadUntil(SafeString& buffer, const int timeout, const char *what)
+{
+    buffer.clear();
+    time_delay_.start(timeout);
+
+    while (!time_delay_.justFinished())
+    {
+        if (!serial_.available()) continue;
+        char c = (char)serial_.read();
+        buffer += c;
+        if (10 != c) continue;
+
+        buffer.trim();
+        if (buffer == what) return true;
+        buffer.clear();
+    }
+    return false;
+}

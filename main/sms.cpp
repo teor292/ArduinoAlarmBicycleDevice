@@ -156,6 +156,17 @@ bool Sms::TryReadForwardSmsFromSerial(SafeString& result)
   return true;
 }
 
+void Sms::DeleteAllSms(SafeString& buffer)
+{
+  buffer.clear();
+  serial_.println("AT+CMGDA=\"DEL ALL\"");
+  if (!reader_.ReadStatusResponse(buffer, 25000)) return;
+  if (buffer.startsWith("OK")) return;
+  //by description if error occures there is error description after
+  //ERROR message
+  reader_.ReadStatusResponse(buffer, 5000);
+}
+
 bool Sms::cmt_extract_phone_number_(SafeString& source, SafeString& dst)
 {
     int index = source.indexOf(':');
@@ -223,14 +234,21 @@ char* Sms::GetText()
 
 void Sms::SendSms(const char *text)
 {
+    static const char AT_CMGS[] = "AT+CMGS=";
     int count_new_lines = count_new_lines_plus_one(text);
-    serial_.print("AT+CMGS=");
+    serial_.print(AT_CMGS);
     serial_.println(phone_);
+    createSafeString(tmp_header, sizeof(AT_CMGS) + sizeof(phone_));
+    tmp_header = AT_CMGS;
+    tmp_header += phone_;
     //read AT+CMGS=phone
-    if (!reader_.ReadLine(g_string_, 1000))
+    if (!reader_.ReadUntil(g_string_, 5000, tmp_header.c_str()))
     {
       PRINTLN(F("AT not found"));
-      return;
+      //if not found -> not return, continue
+      //because sim800L can wait for text and symbol 26
+      //If sim800L will wait -> we can't enter other commands
+      //return;
     }
     PRINTLN(F("AT::::"));
     PRINT(g_string_);
@@ -238,12 +256,12 @@ void Sms::SendSms(const char *text)
     if (!reader_.ReadChar(enter_symbol, 1000)) 
     {
       PRINTLN(F("no found23"));
-      return;
+      //continue
     }
     if ('>' != enter_symbol)
     {
         PRINTLN(F("no found > symbol"));
-        return;
+        //continue
     }
     serial_.print(text);
 
