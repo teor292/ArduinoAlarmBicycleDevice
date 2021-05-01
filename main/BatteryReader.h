@@ -1,0 +1,25 @@
+#pragma once
+
+#include "SafeString.h"
+#include <SoftwareSerial.h>
+#include "BlockTimeReader.h"
+
+class BatteryReader
+{
+    public:
+
+        explicit BatteryReader(SafeString& tmp_string, SoftwareSerial& serial, BlockTimeReader &reader);
+
+        bool ReadBattery();
+
+        const char * GetData() const;
+        unsigned char GetDigitValue() const;
+
+    private:
+        
+        SafeString& tmp_string_;
+        SoftwareSerial& serial_;
+        BlockTimeReader& reader_;
+        char battery_result_[21];
+        unsigned char digit_value_;
+};
