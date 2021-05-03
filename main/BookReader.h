@@ -10,7 +10,7 @@ class BookReader
 
         explicit BookReader(SoftwareSerial& serial, BlockTimeReader &reader);
 
-        void LoadAdminPhone(SafeString &buffer);
+        bool LoadAdminPhone(SafeString &buffer);
 
         void SetAdminPhone(const char* phone);
 

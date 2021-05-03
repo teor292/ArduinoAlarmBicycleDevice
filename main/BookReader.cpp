@@ -5,39 +5,41 @@ BookReader::BookReader(SoftwareSerial& serial, BlockTimeReader& reader)
     reader_(reader)
 {}
 
-void BookReader::LoadAdminPhone(SafeString &buffer)
+bool BookReader::LoadAdminPhone(SafeString &buffer)
 {
     buffer.clear();
     //admin phone in 1 position of phone book on this device
     serial_.println("AT+CPBR=1");
-    if (!reader_.ReadStatusResponse(buffer, 3000)) return;
+    if (!reader_.ReadStatusResponse(buffer, 3000)) return false;
 
-    if (!buffer.startsWith("+CPBR")) return;
+    if (!buffer.startsWith("+CPBR")) return false;
 
     int index = -1;
     for ( int i = 0; i < 3; ++i)
     {
         index = buffer.indexOf(',', index + 1);
-        if (-1 == index) return;
+        if (-1 == index) return false;
     }
 
     int last_index = buffer.indexOf('"', index + 2);
     //7 == index diff of `,"admin"`
-    if (last_index - index != 7) return;
+    if (last_index - index != 7) return false;
     
     createSafeString(tmp_admin_str, 5);
     buffer.substring(tmp_admin_str, index + 2, last_index);
-    if (tmp_admin_str != "admin") return;
+    if (tmp_admin_str != "admin") return false;
 
     index = buffer.indexOf('\"');
     last_index = buffer.indexOf('\"', index + 1);
-    if (-1 == last_index) return;
+    if (-1 == last_index) return false;
 
     createSafeStringFromCharArray(result, admin_phone_number_);
     buffer.substring(result, index, last_index + 1);
 
     //read last OK
     reader_.ReadLine(buffer, 1000);
+
+    return true;
 
 }
 

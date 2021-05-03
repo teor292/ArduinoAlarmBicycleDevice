@@ -50,6 +50,7 @@ const char CMT_MODE[] = "AT+CNMI=1,2,0,0,0";
 const char SILINCE_MODE[] = "AT+CNMI=0,0,0,0,0";
 
 bool get_signal_strength(SafeString& str);
+void perform_command(const char* command);
 
 void setup() 
 {
@@ -57,51 +58,77 @@ void setup()
   PRINTLN(F("Start!"));
   SafeString::setOutput(Serial);
 
+  SIM800.begin(GPSBaud);      
 
-  
-  SIM800.begin(GPSBaud);            
+  perform_command("AT");
 
-  while (true)
+  PRINTLN(F("AT ANSWER GET"));
+
+  //wait 10 seconds for initialization of SIM800L is complete
+  //if continue without delay -> multiple unsolicit result codes (URC) will come 
+  delay(10000); 
+
+  //it would be some lines after initialization in buffer:
+  //0. ??? Well once I this smth, but not remember what :)
+  //1. +CFUN: 1
+  //2. +CPIN: READY
+  //3. Call Ready
+  //4. SMS Ready
+  //read it without check
+  for ( unsigned char i = 0; i < 5; ++i)
   {
-    SIM800.println("AT");
-    if (reader.ReadStatusResponse(test_string, 5000)) break;
-    PRINTLN(F("NO SIM800 ANSWER"));
-  }
+    reader.ReadLine(test_string, 1000);
+  }     
 
-  int index = test_string.indexOf(OK);
-  if (-1 == index)
-  {
-    PRINTLN(F("AT not OK"));
-    while (true); //stop here
-  }
-
-
-
-  PRINTLN(F("ANSWER GET"));
   //configure text mode
-  SIM800.println("AT+CMGF=1");
-  reader.ReadStatusResponse(test_string, 1000);
-  //response must be OK, so not check it
+  perform_command("AT+CMGF=1");
 
-  SIM800.println("AT+GSMBUSY=1");
-  reader.ReadStatusResponse(test_string, 1000);
+  //prohibit income calls
+  perform_command("AT+GSMBUSY=1");
 
   //will get sms and send it directly to software
-  //withour saving to sms memory
-  set_sms_mode(CMT_MODE);
+  //without saving to sms memory
+  while (!set_sms_mode(CMT_MODE))
+  {
+    delay(1000);
+  }
 
-  adminer.LoadAdminPhone(test_string);
-  #ifdef DEBUG
+  //load admin phone
+  while (!adminer.LoadAdminPhone(test_string))
+  {
+    delay(1000);
+  }
+
+#ifdef DEBUG
 
   if (adminer.IsEmpty())
   {
     Serial.println(F("Phone is empty"));
     return;
   }
-
   Serial.println(adminer.GetAdminPhone());
 
-  #endif
+#endif
+}
+
+void perform_command(const char* command)
+{
+  while (true)
+  {
+    SIM800.println(command);
+    if (reader.ReadStatusResponse(test_string, 5000))
+    {
+      int index = test_string.indexOf(OK);
+      if (-1 != index)
+      {
+        break;
+      } 
+      PRINTLN(F("cmd not OK"));
+      delay(1000);
+      continue;
+    }
+    PRINTLN(F("NO SIM800 ANSWER"));
+  }
 }
 
 bool set_sms_mode(const char *mode)
