@@ -15,6 +15,8 @@
 #include "scope_exit.h"
 #include "VibroStater.h"
 #include "BookReader.h"
+#include "Settings.h"
+#include <avr/eeprom.h>
 
 static const int RXPin = 8, TXPin = 9;
 static const uint32_t GPSBaud = 9600;
@@ -51,12 +53,18 @@ const char SILINCE_MODE[] = "AT+CNMI=0,0,0,0,0";
 
 bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
+void set_alarm_and_sms(unsigned char value);
+
+Settings settings;
 
 void setup() 
 {
   Serial.begin(GPSBaud);            
   PRINTLN(F("Start!"));
   SafeString::setOutput(Serial);
+
+  eeprom_read_block(&settings, 0, sizeof(settings));
+  vibro.EnableAlarm(settings.alarm);
 
   SIM800.begin(GPSBaud);      
 
@@ -109,6 +117,11 @@ void setup()
   Serial.println(adminer.GetAdminPhone());
 
 #endif
+}
+
+void save_settings()
+{
+  eeprom_update_block(&settings, 0, sizeof(settings));
 }
 
 void perform_command(const char* command)
@@ -265,13 +278,11 @@ void loop()
         }
         if (tmp_str == ON)
         {
-          vibro.EnableAlarm(1);
-          sms_one.SendSms(OK);
+          set_alarm_and_sms(1);
         }
         else if (tmp_str == OFF)
         {
-          vibro.EnableAlarm(0);
-          sms_one.SendSms(OK);
+          set_alarm_and_sms(0);
         }
         else
         {
@@ -284,6 +295,14 @@ void loop()
     //PRINTLN(F("Returned from send sms"));
       
   }
+}
+
+void set_alarm_and_sms(unsigned char value)
+{
+    settings.alarm = value;
+    save_settings();
+    vibro.EnableAlarm(value);
+    sms_one.SendSms(OK);
 }
 
 
