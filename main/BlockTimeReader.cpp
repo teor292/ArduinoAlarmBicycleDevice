@@ -1,6 +1,5 @@
 #include "BlockTimeReader.h"
 
-
 BlockTimeReader::BlockTimeReader(SoftwareSerial& serial, millisDelay &delay_object)
  : serial_(serial),
  time_delay_(delay_object)
@@ -55,7 +54,32 @@ bool BlockTimeReader::read_response_(SafeString& result, const int timeout, unsi
 
 bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
 {
-    return read_response_(result, timeout, 1);
+    //must ignore input and get count end of line after input
+    result.clear();
+    time_delay_.start(timeout);
+
+    while (!time_delay_.justFinished())
+    {
+        if (!serial_.available()) continue;
+        char c = (char)serial_.read();
+        result += c;
+        if (10 == c) //LF
+        {
+            auto index1 = result.indexOf("OK");
+            auto index2 = result.indexOf("ERROR");
+            if (-1 != index1 
+                || -1 != index2)
+            {
+                PRINT(F("Current line: "));
+                PRINTLN(result);
+                PRINTLN(F("Current line end"));
+                return true;
+            }
+        }
+    }
+
+    return false;
+
 }
 
 bool BlockTimeReader::ReadSomeResponse(SafeString& result, const int timeout)

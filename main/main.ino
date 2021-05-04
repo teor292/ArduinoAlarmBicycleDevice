@@ -18,11 +18,12 @@
 #include "Settings.h"
 #include <avr/eeprom.h>
 #include "work_mode.h"
+#include "ModeSerial.h"
 
 static const int RXPin = 8, TXPin = 9;
 static const uint32_t GPSBaud = 9600;
 
-SoftwareSerial SIM800(RXPin, TXPin);        // 8 - RX Arduino (TX SIM800L), 9 - TX Arduino (RX SIM800L)
+ModeSerial SIM800(RXPin, TXPin);        // 8 - RX Arduino (TX SIM800L), 9 - TX Arduino (RX SIM800L)
 
 createSafeString(test_string, 200);
 millisDelay time_delay;
@@ -39,7 +40,6 @@ BookReader adminer(SIM800, reader);
 
 
 unsigned char send_alarm_on_low_battery = 1;
-WORK_MODE current_mode = WORK_MODE::STANDART;
 
 const char GET_BATTERY[] = "get battery";
 const char GET_TIME[] = "get time";
@@ -98,6 +98,8 @@ void setup()
     reader.ReadLine(test_string, 1000);
   }     
 
+  //TODO CHECK PIN CODE
+
   //configure text mode
   perform_command("AT+CMGF=1");
 
@@ -112,10 +114,7 @@ void setup()
   }
 
   //load admin phone
-  while (!adminer.LoadAdminPhone(test_string))
-  {
-    delay(1000);
-  }
+  adminer.LoadAdminPhone(test_string);
 
 #ifdef DEBUG
 
@@ -167,13 +166,6 @@ bool set_sms_mode(const char *mode)
   return test_string.startsWith(OK);
 }
 
-void awake_if_sleep()
-{
-  if (WORK_MODE::SLEEP != current_mode) return;
-  SIM800.write(' '); //if sleep mode -> one ignored symbol
-  delay(150); //minimum 100, but wait 150 for reliability
-}
-
 void clear_buffer()
 {
   while (SIM800.available())
@@ -184,11 +176,9 @@ void clear_buffer()
 
 void do_vibro()
 {
-  if (!adminer.IsEmpty())
+  if (!adminer.IsEmpty()
+    && vibro.Update())
   {
-    if (vibro.Update())
-    {
-      awake_if_sleep();
       if (!set_sms_mode(SILINCE_MODE))
       {
         PRINTLN(F("!sms mode"));
@@ -198,7 +188,6 @@ void do_vibro()
       sms_one.SetPhone(adminer.GetAdminPhone());
       sms_one.SendSms("!!! Vibro alarm !!!");
       set_sms_mode(CMT_MODE);
-    }
   }
 }
 
@@ -206,21 +195,18 @@ void do_battery()
 {
   if (!adminer.IsEmpty()
     && send_alarm_on_low_battery
-    && battery_checker.Check())
+    && battery_checker.Check()
+    && battery_checker.Update())
   {
-      awake_if_sleep();
-      if (battery_checker.Update())
+      if (!set_sms_mode(SILINCE_MODE))
       {
-        if (!set_sms_mode(SILINCE_MODE))
-        {
-          PRINTLN(F("!sms mode"));
-          return;
-        }
-        clear_buffer();
-        sms_one.SetPhone(adminer.GetAdminPhone());
-        sms_one.SendSms(battery_checker.GetData());
-        set_sms_mode(CMT_MODE);
+        PRINTLN(F("!sms mode"));
+        return;
       }
+      clear_buffer();
+      sms_one.SetPhone(adminer.GetAdminPhone());
+      sms_one.SendSms(battery_checker.GetData());
+      set_sms_mode(CMT_MODE);
   }
 }
 
@@ -244,7 +230,6 @@ void loop()
       PRINTLN(F("Error read CMT sms"));
       return;
     }
-    awake_if_sleep();
     if (!set_sms_mode(SILINCE_MODE))
     {
       PRINTLN(F("!sms mode"));
@@ -353,8 +338,7 @@ void loop()
         {
           if (perform_sim800_command(SLEEP_MODE_COMMAND))
           {
-            current_mode = WORK_MODE::SLEEP;
-            awake_if_sleep();
+            SIM800.SetMode(WORK_MODE::SLEEP);
             sms_one.SendSms(OK);
           }
         }
@@ -362,7 +346,7 @@ void loop()
         {
           if (perform_sim800_command(DEFAULT_MODE_COMMAND))
           {
-            current_mode = WORK_MODE::STANDART;
+            SIM800.SetMode(WORK_MODE::STANDART);
             sms_one.SendSms(OK);
           } 
         }
@@ -384,7 +368,7 @@ bool perform_sim800_command(const char *cmd)
   SIM800.println(cmd);
   //don't know what to do with status code
   if (!reader.ReadStatusResponse(test_string, 1000)) return false;
-  return test_string.startsWith(OK);
+  return -1 != test_string.indexOf(OK);
 }
 
 void set_alarm_and_sms(unsigned char value)

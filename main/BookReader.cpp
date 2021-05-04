@@ -11,10 +11,12 @@ bool BookReader::LoadAdminPhone(SafeString &buffer)
     //admin phone in 1 position of phone book on this device
     serial_.println("AT+CPBR=1");
     if (!reader_.ReadStatusResponse(buffer, 3000)) return false;
-
-    if (!buffer.startsWith("+CPBR")) return false;
-
-    int index = -1;
+    
+    int index = buffer.indexOf("+CPBR: ");
+    if (-1 == index) return false;
+    buffer.substring(buffer, index);
+    
+    index = -1;
     for ( int i = 0; i < 3; ++i)
     {
         index = buffer.indexOf(',', index + 1);
@@ -46,8 +48,8 @@ bool BookReader::LoadAdminPhone(SafeString &buffer)
 void BookReader::SetAdminPhone(const char* phone)
 {
     //AT+CPBW=20,"phone",145,"admin"
-
-    createSafeString(tmp_str, 39);
+    //39 for max phone number + sizeof(ERROR) + CRLF
+    createSafeString(tmp_str, 46);
     tmp_str = "AT+CPBW=1,";
     tmp_str += phone;
     tmp_str += ",145,\"admin\"";
