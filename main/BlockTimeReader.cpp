@@ -99,6 +99,7 @@ bool BlockTimeReader::ReadUntil(SafeString& buffer, const int timeout, const cha
 
         buffer.trim();
         if (buffer == what) return true;
+        PRINTLN(buffer);
         buffer.clear();
     }
     return false;

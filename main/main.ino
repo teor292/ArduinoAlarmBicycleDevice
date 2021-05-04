@@ -17,6 +17,7 @@
 #include "BookReader.h"
 #include "Settings.h"
 #include <avr/eeprom.h>
+#include "work_mode.h"
 
 static const int RXPin = 8, TXPin = 9;
 static const uint32_t GPSBaud = 9600;
@@ -35,7 +36,10 @@ Sms sms_one(SIM800, reader, test_string);
 VibroStater vibro(5);
 BookReader adminer(SIM800, reader);
 
+
+
 unsigned char send_alarm_on_low_battery = 1;
+WORK_MODE current_mode = WORK_MODE::STANDART;
 
 const char GET_BATTERY[] = "get battery";
 const char GET_TIME[] = "get time";
@@ -50,10 +54,16 @@ const char ERROR[] = "Error";
 const char OK[] = "OK";
 const char CMT_MODE[] = "AT+CNMI=1,2,0,0,0";
 const char SILINCE_MODE[] = "AT+CNMI=0,0,0,0,0";
+const char SET_MODE[] = "set mode ";
+const char SLEEP_MODE[] = "sleep";
+const char DEFAULT_MODE[] = "def";
+const char SLEEP_MODE_COMMAND[] = "AT+CSCLK=2";
+const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
 
 bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
 void set_alarm_and_sms(unsigned char value);
+bool perform_sim800_command(const char *cmd);
 
 Settings settings;
 
@@ -77,7 +87,7 @@ void setup()
   delay(10000); 
 
   //it would be some lines after initialization in buffer:
-  //0. ??? Well once I this smth, but not remember what :)
+  //0. ??? Well once I saw smth, but not remember what :)
   //1. +CFUN: 1
   //2. +CPIN: READY
   //3. Call Ready
@@ -157,26 +167,69 @@ bool set_sms_mode(const char *mode)
   return test_string.startsWith(OK);
 }
 
-void loop() 
+void awake_if_sleep()
+{
+  if (WORK_MODE::SLEEP != current_mode) return;
+  SIM800.write(' '); //if sleep mode -> one ignored symbol
+  delay(150); //minimum 100, but wait 150 for reliability
+}
+
+void clear_buffer()
+{
+  while (SIM800.available())
+  {
+    SIM800.read();
+  }
+}
+
+void do_vibro()
 {
   if (!adminer.IsEmpty())
   {
     if (vibro.Update())
     {
+      awake_if_sleep();
+      if (!set_sms_mode(SILINCE_MODE))
+      {
+        PRINTLN(F("!sms mode"));
+        return;
+      }
+      clear_buffer();
       sms_one.SetPhone(adminer.GetAdminPhone());
       sms_one.SendSms("!!! Vibro alarm !!!");
+      set_sms_mode(CMT_MODE);
     }
   }
+}
 
-
+void do_battery()
+{
   if (!adminer.IsEmpty()
     && send_alarm_on_low_battery
-    && battery_checker.Check()
-    && battery_checker.Update())
+    && battery_checker.Check())
   {
-      sms_one.SetPhone(adminer.GetAdminPhone());
-      sms_one.SendSms(battery_checker.GetData());
+      awake_if_sleep();
+      if (battery_checker.Update())
+      {
+        if (!set_sms_mode(SILINCE_MODE))
+        {
+          PRINTLN(F("!sms mode"));
+          return;
+        }
+        clear_buffer();
+        sms_one.SetPhone(adminer.GetAdminPhone());
+        sms_one.SendSms(battery_checker.GetData());
+        set_sms_mode(CMT_MODE);
+      }
   }
+}
+
+void loop() 
+{
+  do_vibro();
+
+  do_battery();
+
 
   if (SIM800.available())
   {
@@ -191,6 +244,7 @@ void loop()
       PRINTLN(F("Error read CMT sms"));
       return;
     }
+    awake_if_sleep();
     if (!set_sms_mode(SILINCE_MODE))
     {
       PRINTLN(F("!sms mode"));
@@ -290,11 +344,47 @@ void loop()
         }
         return;
     }
+
+    if (sms_text.startsWith(SET_MODE))
+    {
+        const char* tmp = sms_text.c_str() + sizeof(SET_MODE) - 1;
+        createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
+        if (tmp_str == SLEEP_MODE)
+        {
+          if (perform_sim800_command(SLEEP_MODE_COMMAND))
+          {
+            current_mode = WORK_MODE::SLEEP;
+            awake_if_sleep();
+            sms_one.SendSms(OK);
+          }
+        }
+        else if (tmp_str == DEFAULT_MODE)
+        {
+          if (perform_sim800_command(DEFAULT_MODE_COMMAND))
+          {
+            current_mode = WORK_MODE::STANDART;
+            sms_one.SendSms(OK);
+          } 
+        }
+        else
+        {
+          sms_one.SendSms(ERROR);
+        }
+    }
     //if smth unknown -> do nothing
     //sms_one.SendSms("SMSTEXT");
     //PRINTLN(F("Returned from send sms"));
       
   }
+}
+
+
+bool perform_sim800_command(const char *cmd)
+{
+  SIM800.println(cmd);
+  //don't know what to do with status code
+  if (!reader.ReadStatusResponse(test_string, 1000)) return false;
+  return test_string.startsWith(OK);
 }
 
 void set_alarm_and_sms(unsigned char value)
