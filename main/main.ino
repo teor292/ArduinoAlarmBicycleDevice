@@ -87,7 +87,7 @@ void setup()
   delay(10000); 
 
   //it would be some lines after initialization in buffer:
-  //0. ??? Well once I saw smth, but not remember what :)
+  //0. RDY
   //1. +CFUN: 1
   //2. +CPIN: READY
   //3. Call Ready
