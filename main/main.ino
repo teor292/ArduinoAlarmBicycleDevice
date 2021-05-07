@@ -1,3 +1,5 @@
+#include <LowPower.h>
+
 #include <BufferedInput.h>
 #include <BufferedOutput.h>
 #include <loopTimer.h>
@@ -19,6 +21,7 @@
 #include <avr/eeprom.h>
 #include "work_mode.h"
 #include "ModeSerial.h"
+#include <avr/sleep.h>
 
 static const int RXPin = 8, TXPin = 9;
 static const uint32_t GPSBaud = 9600;
@@ -64,11 +67,16 @@ bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
 void set_alarm_and_sms(unsigned char value);
 bool perform_sim800_command(const char *cmd);
+void configure_sleep_mode();
 
 Settings settings;
 
 void setup() 
 {
+  //configure here because sim800l do reboot while initialization if
+  //D2 in in default mode
+  configure_sleep_mode();
+
   Serial.begin(GPSBaud);            
   PRINTLN(F("Start!"));
   SafeString::setOutput(Serial);
@@ -128,6 +136,20 @@ void setup()
 #endif
 }
 
+//nothing do
+void int0_func()
+{}
+
+void configure_sleep_mode()
+{
+  //use INT0 (pin 2) for awake when sms arrived
+  pinMode(2, INPUT); 
+
+  attachInterrupt(0, int0_func, FALLING);
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+}
+
 void save_settings()
 {
   eeprom_update_block(&settings, 0, sizeof(settings));
@@ -156,9 +178,10 @@ void perform_command(const char* command)
 bool set_sms_mode(const char *mode)
 {
   SIM800.println(mode);
-  if (!reader.ReadUntil(test_string, 1000, mode))
+  if (!reader.ReadUntil(test_string, 5000, mode))
   {
     PRINTLN(F("Read until failed"));
+    PRINTLN(test_string);
     return false;
   }
   if (!reader.ReadLine(test_string, 1000)) return false;
@@ -210,8 +233,21 @@ void do_battery()
   }
 }
 
+bool sl = true;
+
 void loop() 
 {
+  EXIT_SCOPE_SIMPLE(
+    if (WORK_MODE::SLEEP != SIM800.GetMode()) return;
+    //TODO init timer by awake 1 per hour for battery check
+    //TODO interrupt flag -> not check battery because we get sms
+    sleep_mode();
+    //without one send character
+    //SIM800 can't write data
+    SIM800.write(' ');
+    delay(100); //wait for awake
+  );
+
   do_vibro();
 
   do_battery();
@@ -338,6 +374,7 @@ void loop()
         {
           if (perform_sim800_command(SLEEP_MODE_COMMAND))
           {
+            vibro.EnableAlarm(0); //disable alarm in sleep mode
             SIM800.SetMode(WORK_MODE::SLEEP);
             sms_one.SendSms(OK);
           }

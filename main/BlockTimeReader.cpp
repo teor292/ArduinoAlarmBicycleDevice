@@ -77,7 +77,9 @@ bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
             }
         }
     }
-
+    PRINT(F("Current line: "));
+    PRINTLN(result);
+    PRINTLN(F("Current line end"));
     return false;
 
 }
