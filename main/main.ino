@@ -108,8 +108,6 @@ void setup()
     reader.ReadLine(test_string, 1000);
   }     
 
-  //TODO CHECK PIN CODE
-
   //configure text mode
   perform_command("AT+CMGF=1");
 
@@ -125,8 +123,6 @@ void setup()
 
   //load admin phone
   adminer.LoadAdminPhone(test_string);
-
-  //perform_command("AT+IPR=9600");
 
 #ifdef DEBUG
 
