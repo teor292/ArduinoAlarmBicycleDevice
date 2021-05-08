@@ -64,14 +64,14 @@ void perform_command(const char* command);
 void set_alarm_and_sms(unsigned char value);
 bool perform_sim800_command(const char *cmd);
 
-unsigned char send_alarm_on_low_battery = 1;
+bool send_alarm_on_low_battery = true;
 Settings settings;
 //flag indicating INT0
-unsigned char f_extern_interrupt = 0;
+bool f_extern_interrupt = false;
 //time when arduino was in sleep mode last time
 unsigned long last_enter_sleep_time = 0;
 
-unsigned char was_in_sleep_mode = 0;
+bool was_in_sleep_mode = false;
 
 void setup() 
 {
@@ -138,7 +138,7 @@ void setup()
 
 void int0_func()
 {
-  f_extern_interrupt = 1;
+  f_extern_interrupt = true;
   PRINT("INT");
 }
 
@@ -230,8 +230,8 @@ void loop()
   EXIT_SCOPE_SIMPLE(
 
     Serial.flush();  
-    f_extern_interrupt = 0;
-    was_in_sleep_mode = 0;
+    f_extern_interrupt = false;
+    was_in_sleep_mode = false;
 
     //call check battery here
     //because it is neccessary check battery
@@ -260,7 +260,7 @@ void loop()
 
     detachInterrupt(0);
 
-    was_in_sleep_mode = 1;
+    was_in_sleep_mode = true;
 
     PRINTLN("AWAKE");
   );
