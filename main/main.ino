@@ -40,24 +40,27 @@ BookReader adminer(SIM800, reader);
 
 
 
-const char GET_BATTERY[] = "get battery";
-const char GET_TIME[] = "get time";
-const char GET_SIGNAL[] = "get signal";
-const char SET_ADMIN[] = "set admin";
-const char LOW_BATTERY[] = "low battery ";
-const char SET_ALARM[] = "set alarm ";
-const char SENSITY[] = "sensity ";
-const char ON[] = "on";
-const char OFF[] = "off";
-const char ERROR[] = "Error";
-const char OK[] = "OK";
-const char CMT_MODE[] = "AT+CNMI=1,2,0,0,0";
-const char SILINCE_MODE[] = "AT+CNMI=0,0,0,0,0";
-const char SET_MODE[] = "set mode ";
-const char SLEEP_MODE[] = "sleep";
-const char DEFAULT_MODE[] = "def";
-const char SLEEP_MODE_COMMAND[] = "AT+CSCLK=2";
-const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
+const char GET_BATTERY[] PROGMEM = "get battery";
+const char GET_TIME[] PROGMEM = "get time";
+const char GET_SIGNAL[] PROGMEM = "get signal";
+const char SET_ADMIN[] PROGMEM = "set admin";
+const char LOW_BATTERY[] PROGMEM = "low battery ";
+const char SET_ALARM[] PROGMEM = "set alarm ";
+const char SENSITY[] PROGMEM = "sensity ";
+const char ON[] PROGMEM = "on";
+const char OFF[] PROGMEM = "off";
+const char ERROR[] PROGMEM = "Error";
+const char OK[] PROGMEM = "OK";
+const char CMT_MODE[] PROGMEM = "AT+CNMI=1,2,0,0,0";
+const char SILINCE_MODE[] PROGMEM = "AT+CNMI=0,0,0,0,0";
+const char SET_MODE[] PROGMEM = "set mode ";
+const char SLEEP_MODE[] PROGMEM = "sleep";
+const char DEFAULT_MODE[] PROGMEM = "def";
+const char SLEEP_MODE_COMMAND[] PROGMEM = "AT+CSCLK=2";
+const char DEFAULT_MODE_COMMAND[] PROGMEM = "AT+CSCLK=0";
+const char TEXT_MODE[] PROGMEM = "AT+CMGF=1";
+const char PROHIBIT_CALLS[] PROGMEM = "AT+GSMBUSY=1";
+const char VIBRO_ALARM[] PROGMEM = "!!! Vibro alarm !!!";
 
 bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
@@ -109,10 +112,10 @@ void setup()
   }     
 
   //configure text mode
-  perform_command("AT+CMGF=1");
+  perform_command(TEXT_MODE);
 
   //prohibit income calls
-  perform_command("AT+GSMBUSY=1");
+  perform_command(PROHIBIT_CALLS);
 
   //will get sms and send it directly to software
   //without saving to sms memory
@@ -198,7 +201,7 @@ void do_vibro()
       }
       clear_buffer();
       sms_one.SetPhone(adminer.GetAdminPhone());
-      sms_one.SendSms("!!! Vibro alarm !!!");
+      sms_one.SendSms(VIBRO_ALARM);
       set_sms_mode(CMT_MODE);
   }
 }
@@ -262,7 +265,7 @@ void loop()
 
     was_in_sleep_mode = true;
 
-    PRINTLN("AWAKE");
+    PRINTLN(F("AWAKE"));
   );
 
   do_vibro();
