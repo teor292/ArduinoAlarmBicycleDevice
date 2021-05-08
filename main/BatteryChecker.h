@@ -15,6 +15,9 @@ class BatteryChecker
 
         bool Update();
 
+        //for sleep mode, must sub time from last time
+        void AddToRealTime(unsigned long time);
+
         const char* GetData() const;
 
     private:

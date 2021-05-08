@@ -127,30 +127,27 @@ void Sms::DeleteReadIncomeMessages()
 bool Sms::TryReadForwardSmsFromSerial(SafeString& result)
 {
   if (!reader_.ReadLine(result, 1000)) return false;
+
   if (!result.startsWith("CMT")) return false;
+  
   if (!reader_.NClReadLine(result, 1000)) return false;
   PRINTLN(result);
+
   createSafeStringFromCharArray(quoted_phone_number, phone_);
   if (!cmt_extract_phone_number_(result, quoted_phone_number)) return false;
   PRINTLN(quoted_phone_number);
 
   createSafeStringFromCharArray(date_str, date_);
-  if (!extract_date_(result, date_str, 2))
-  {
-      PRINT(F("!DATE"));
-  }
-    PRINTLN(date_str);
+  extract_date_(result, date_str, 2);
+  PRINTLN(date_str);
     
   auto index = result.indexOf((char)10);
-  if (-1 == index)
-  {
-    PRINTLN("!LF");
-    return false;
-  }
+  if (-1 == index) return false;
 
   //read sms text
   createSafeStringFromCharArray(sms_text, text_);
   result.substring(sms_text, index + 1);
+  PRINT(F("SMS TEXT: "));
   PRINT(sms_text);
 
   return true;

@@ -6,11 +6,17 @@ BatteryChecker::BatteryChecker(BatteryReader& batter_reader)
     last_time_(0)
 {}
 
+void BatteryChecker::AddToRealTime(unsigned long time)
+{
+    last_time_ -= time;
+}
+
 bool BatteryChecker::Check()
 {
     unsigned long current_time = millis();
+    //if current_time will be < last_time_
+    //then current_time - last_time must whatever get time distance
     if (0 == last_time_
-        || last_time_ > current_time 
         || current_time - last_time_ > TIME_BATTERY_CHECK)
     {
         last_time_ = current_time;

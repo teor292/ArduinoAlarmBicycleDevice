@@ -1,5 +1,3 @@
-#include <LowPower.h>
-
 #include <BufferedInput.h>
 #include <BufferedOutput.h>
 #include <loopTimer.h>
@@ -21,10 +19,10 @@
 #include <avr/eeprom.h>
 #include "work_mode.h"
 #include "ModeSerial.h"
-#include <avr/sleep.h>
+#include <LowPower.h>
 
-static const int RXPin = 8, TXPin = 9;
-static const uint32_t GPSBaud = 9600;
+const int RXPin = 8, TXPin = 9;
+const uint32_t GPSBaud = 9600;
 
 ModeSerial SIM800(RXPin, TXPin);        // 8 - RX Arduino (TX SIM800L), 9 - TX Arduino (RX SIM800L)
 
@@ -41,8 +39,6 @@ VibroStater vibro(5);
 BookReader adminer(SIM800, reader);
 
 
-
-unsigned char send_alarm_on_low_battery = 1;
 
 const char GET_BATTERY[] = "get battery";
 const char GET_TIME[] = "get time";
@@ -67,21 +63,27 @@ bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
 void set_alarm_and_sms(unsigned char value);
 bool perform_sim800_command(const char *cmd);
-void configure_sleep_mode();
 
+unsigned char send_alarm_on_low_battery = 1;
 Settings settings;
+//flag indicating INT0
+unsigned char f_extern_interrupt = 0;
+//time when arduino was in sleep mode last time
+unsigned long last_enter_sleep_time = 0;
+
+unsigned char was_in_sleep_mode = 0;
 
 void setup() 
 {
-  //configure here because sim800l do reboot while initialization if
-  //D2 in in default mode
-  configure_sleep_mode();
+  //configure here because sim800l due to lack of amperage can
+  // reboot while initialization if D2 (INT0) in in default mode
+  pinMode(2, INPUT); 
 
   Serial.begin(GPSBaud);            
   PRINTLN(F("Start!"));
   SafeString::setOutput(Serial);
 
-  eeprom_read_block(&settings, 0, sizeof(settings));
+  settings.Load();
   vibro.EnableAlarm(settings.alarm);
 
   SIM800.begin(GPSBaud);      
@@ -124,6 +126,8 @@ void setup()
   //load admin phone
   adminer.LoadAdminPhone(test_string);
 
+  //perform_command("AT+IPR=9600");
+
 #ifdef DEBUG
 
   if (adminer.IsEmpty())
@@ -136,24 +140,12 @@ void setup()
 #endif
 }
 
-//nothing do
 void int0_func()
-{}
-
-void configure_sleep_mode()
 {
-  //use INT0 (pin 2) for awake when sms arrived
-  pinMode(2, INPUT); 
-
-  attachInterrupt(0, int0_func, FALLING);
-
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  f_extern_interrupt = 1;
+  PRINT("INT");
 }
 
-void save_settings()
-{
-  eeprom_update_block(&settings, 0, sizeof(settings));
-}
 
 void perform_command(const char* command)
 {
@@ -200,6 +192,7 @@ void clear_buffer()
 void do_vibro()
 {
   if (!adminer.IsEmpty()
+    && !SIM800.IsSleepMode()
     && vibro.Update())
   {
       if (!set_sms_mode(SILINCE_MODE))
@@ -216,7 +209,8 @@ void do_vibro()
 
 void do_battery()
 {
-  if (!adminer.IsEmpty()
+  if (!f_extern_interrupt
+    && !adminer.IsEmpty()
     && send_alarm_on_low_battery
     && battery_checker.Check()
     && battery_checker.Update())
@@ -233,24 +227,51 @@ void do_battery()
   }
 }
 
-bool sl = true;
+
 
 void loop() 
 {
   EXIT_SCOPE_SIMPLE(
-    if (WORK_MODE::SLEEP != SIM800.GetMode()) return;
-    //TODO init timer by awake 1 per hour for battery check
-    //TODO interrupt flag -> not check battery because we get sms
-    sleep_mode();
-    //without one send character
-    //SIM800 can't write data
-    SIM800.write(' ');
-    delay(100); //wait for awake
+
+    Serial.flush();  
+    f_extern_interrupt = 0;
+    was_in_sleep_mode = 0;
+
+    //call check battery here
+    //because it is neccessary check battery
+    //when f_extern_interrupt is 0
+    //Atmega can awake not by timer
+    //but by sms, so it must read sms before check battery
+    do_battery();
+
+    if (!SIM800.IsSleepMode()) return;
+
+    auto current_time = millis();
+    if (current_time - last_enter_sleep_time < 5000) return;
+    last_enter_sleep_time = current_time;
+
+    attachInterrupt(0, int0_func, FALLING);
+
+    //awake 1 per hour
+    for (int i = 0; i < 3600 / 8 && !f_extern_interrupt; ++i)
+    {
+      LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+      //millis don't work during power down, so add it
+      battery_checker.AddToRealTime(8 * 1000);   
+    }
+    //reset last awake time because millis don't work while sleep
+    SIM800.ResetTime();
+
+    detachInterrupt(0);
+
+    was_in_sleep_mode = 1;
+
+    PRINTLN("AWAKE");
   );
 
   do_vibro();
 
-  do_battery();
+ 
 
 
   if (SIM800.available())
@@ -266,12 +287,15 @@ void loop()
       PRINTLN(F("Error read CMT sms"));
       return;
     }
+    //wait for full awake before send data
+    if (was_in_sleep_mode) delay(100);
     if (!set_sms_mode(SILINCE_MODE))
     {
       PRINTLN(F("!sms mode"));
       return;
     }
-
+    //clear buffer if it contains some data
+    clear_buffer();
     EXIT_SCOPE_SIMPLE(
       sms_one.DeleteAllSms(test_string);
       set_sms_mode(CMT_MODE);
@@ -354,6 +378,8 @@ void loop()
         if (tmp_str == ON)
         {
           set_alarm_and_sms(1);
+          //when alarm enable -> disable sleep mode
+          SIM800.SetMode(WORK_MODE::STANDART);
         }
         else if (tmp_str == OFF)
         {
@@ -377,6 +403,7 @@ void loop()
             vibro.EnableAlarm(0); //disable alarm in sleep mode
             SIM800.SetMode(WORK_MODE::SLEEP);
             sms_one.SendSms(OK);
+            last_enter_sleep_time = 0;
           }
         }
         else if (tmp_str == DEFAULT_MODE)
@@ -391,10 +418,9 @@ void loop()
         {
           sms_one.SendSms(ERROR);
         }
+        return;
     }
     //if smth unknown -> do nothing
-    //sms_one.SendSms("SMSTEXT");
-    //PRINTLN(F("Returned from send sms"));
       
   }
 }
@@ -411,7 +437,7 @@ bool perform_sim800_command(const char *cmd)
 void set_alarm_and_sms(unsigned char value)
 {
     settings.alarm = value;
-    save_settings();
+    settings.Save();
     vibro.EnableAlarm(value);
     sms_one.SendSms(OK);
 }

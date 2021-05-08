@@ -15,6 +15,11 @@ WORK_MODE ModeSerial::GetMode()
     return current_mode_;
 }
 
+bool ModeSerial::IsSleepMode()
+{
+    return WORK_MODE::SLEEP == current_mode_;
+}
+
 size_t ModeSerial::write(uint8_t c)
 {
     awake_if_sleep_();
@@ -27,12 +32,18 @@ size_t ModeSerial::write(const uint8_t *buffer, size_t size)
     return SoftwareSerial::write(buffer, size);
 }
 
+void ModeSerial::ResetTime()
+{
+    last_time_ = 0;
+}
+
 void ModeSerial::awake_if_sleep_()
 {
     if (WORK_MODE::STANDART == current_mode_) return;
 
     auto current_time = millis();
-    if (current_time < last_time_ + TIME_SLEEP) return;
+    if (0 != last_time_
+        && current_time < last_time_ + TIME_SLEEP) return;
     PRINTLN("awake");
     SoftwareSerial::write(' ');
     delay(150); //100 ms for awake, use 150 for reliability

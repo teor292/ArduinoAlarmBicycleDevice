@@ -105,9 +105,9 @@ bool BlockTimeReader::NClReadLine(SafeString& test_string, const int timeout)
         test_string += c;
         if (10 == c) return true;
     }
-    PRINT(F("Current line: "));
+    PRINT(F("line: "));
     PRINTLN(test_string);
-
+    PRINT(F(":end "));
     return false;
 }
 
@@ -125,7 +125,6 @@ bool BlockTimeReader::ReadUntil(SafeString& buffer, const int timeout, const cha
 
         buffer.trim();
         if (buffer == what) return true;
-        PRINTLN(buffer);
         buffer.clear();
     }
     return false;

@@ -11,6 +11,9 @@ class ModeSerial : public SoftwareSerial
 
         void SetMode(WORK_MODE mode);
         WORK_MODE GetMode();
+        bool IsSleepMode();
+
+        void ResetTime();
         
         //this method is used for write smth
         virtual size_t write(const uint8_t *buffer, size_t size) override;
