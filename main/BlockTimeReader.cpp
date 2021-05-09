@@ -124,7 +124,7 @@ bool BlockTimeReader::ReadUntil(SafeString& buffer, const int timeout, const cha
         if (10 != c) continue;
 
         buffer.trim();
-        if (buffer == what) return true;
+        if (buffer.startsWith(what)) return true;
         buffer.clear();
     }
     return false;

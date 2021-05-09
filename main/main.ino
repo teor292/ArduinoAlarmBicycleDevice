@@ -21,7 +21,10 @@
 #include "ModeSerial.h"
 #include <LowPower.h>
 
+//#define SIM800_INITIALIZATION
+
 const int RXPin = 8, TXPin = 9;
+//if change baud rate -> change command AT+IPR!!!
 const uint32_t GPSBaud = 9600;
 
 ModeSerial SIM800(RXPin, TXPin);        // 8 - RX Arduino (TX SIM800L), 9 - TX Arduino (RX SIM800L)
@@ -40,32 +43,32 @@ BookReader adminer(SIM800, reader);
 
 
 
-const char GET_BATTERY[] PROGMEM = "get battery";
-const char GET_TIME[] PROGMEM = "get time";
-const char GET_SIGNAL[] PROGMEM = "get signal";
-const char SET_ADMIN[] PROGMEM = "set admin";
-const char LOW_BATTERY[] PROGMEM = "low battery ";
-const char SET_ALARM[] PROGMEM = "set alarm ";
-const char SENSITY[] PROGMEM = "sensity ";
-const char ON[] PROGMEM = "on";
-const char OFF[] PROGMEM = "off";
-const char ERROR[] PROGMEM = "Error";
-const char OK[] PROGMEM = "OK";
-const char CMT_MODE[] PROGMEM = "AT+CNMI=1,2,0,0,0";
-const char SILINCE_MODE[] PROGMEM = "AT+CNMI=0,0,0,0,0";
-const char SET_MODE[] PROGMEM = "set mode ";
-const char SLEEP_MODE[] PROGMEM = "sleep";
-const char DEFAULT_MODE[] PROGMEM = "def";
-const char SLEEP_MODE_COMMAND[] PROGMEM = "AT+CSCLK=2";
-const char DEFAULT_MODE_COMMAND[] PROGMEM = "AT+CSCLK=0";
-const char TEXT_MODE[] PROGMEM = "AT+CMGF=1";
-const char PROHIBIT_CALLS[] PROGMEM = "AT+GSMBUSY=1";
-const char VIBRO_ALARM[] PROGMEM = "!!! Vibro alarm !!!";
+const char GET_BATTERY[] = "get battery";
+const char GET_TIME[] = "get time";
+const char GET_SIGNAL[] = "get signal";
+const char SET_ADMIN[] = "set admin";
+const char LOW_BATTERY[] = "low battery ";
+const char SET_ALARM[] = "set alarm ";
+const char SENSITY[] = "sensity ";
+const char ON[] = "on";
+const char OFF[] = "off";
+const char ERROR[] = "Error";
+const char OK[] = "OK";
+const char CMT_MODE[] = "AT+CNMI=1,2,0,0,0";
+const char SILINCE_MODE[] = "AT+CNMI=0,0,0,0,0";
+const char SET_MODE[] = "set mode ";
+const char SLEEP_MODE[] = "sleep";
+const char DEFAULT_MODE[] = "def";
+const char SLEEP_MODE_COMMAND[] = "AT+CSCLK=2";
+const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
+const char PROHIBIT_CALLS[] = "AT+GSMBUSY=1";
+const char VIBRO_ALARM[] = "!!! Vibro alarm !!!";
 
 bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
 void set_alarm_and_sms(unsigned char value);
 bool perform_sim800_command(const char *cmd);
+bool detect_sim800_mode_and_set_def();
 
 bool send_alarm_on_low_battery = true;
 Settings settings;
@@ -79,7 +82,7 @@ bool was_in_sleep_mode = false;
 void setup() 
 {
   //configure here because sim800l due to lack of amperage can
-  // reboot while initialization if D2 (INT0) in in default mode
+  //reboot while initialization if D2 (INT0) in in default mode
   pinMode(2, INPUT); 
 
   Serial.begin(GPSBaud);            
@@ -89,7 +92,12 @@ void setup()
   settings.Load();
   vibro.EnableAlarm(settings.alarm);
 
-  SIM800.begin(GPSBaud);      
+  SIM800.begin(GPSBaud); 
+
+  //if sim800 in sleep mode and we use standart ->
+  //we get nothing. But if it in standart mode and
+  //we use sleep -> everything will be OK
+  SIM800.SetMode(WORK_MODE::SLEEP);     
 
   perform_command("AT");
 
@@ -106,23 +114,35 @@ void setup()
   //3. Call Ready
   //4. SMS Ready
   //read it without check
+  //if sim800 already worker -> read empty lines
   for ( unsigned char i = 0; i < 5; ++i)
   {
     reader.ReadLine(test_string, 1000);
   }     
+  //detect current mode and set default
+  detect_sim800_mode_and_set_def();
+
+  #if defined(SIM800_INITIALIZATION)
 
   //configure text mode
-  perform_command(TEXT_MODE);
+  perform_command("AT+CMGF=1");
 
-  //prohibit income calls
-  perform_command(PROHIBIT_CALLS);
+  //save baud rate
+  perform_command("AT+IPR=9600");
 
   //will get sms and send it directly to software
-  //without saving to sms memory
+  //without saving sms to sim card memory
   while (!set_sms_mode(CMT_MODE))
   {
     delay(1000);
   }
+
+  perform_command("AT&W");
+
+  #endif
+
+  //prohibit income calls
+  perform_command(PROHIBIT_CALLS);
 
   //load admin phone
   adminer.LoadAdminPhone(test_string);
@@ -137,6 +157,39 @@ void setup()
   Serial.println(adminer.GetAdminPhone());
 
 #endif
+}
+
+bool detect_sim800_mode_and_set_def()
+{
+    //read mode
+    SIM800.println(F("AT+CSCLK?"));
+    
+    if (!reader.ReadUntil(test_string, 1000, "+CSCLK:"))
+    {
+      PRINTLN(F("FRM"));
+      return false;
+    }
+    test_string.substring(test_string, 8, 9);
+    if (test_string == "0")
+    {
+      SIM800.SetMode(WORK_MODE::STANDART);
+      PRINTLN(F("STM"));
+    } 
+    else
+    {
+      PRINTLN(F("SLM"));
+      clear_buffer();
+      if (perform_sim800_command(DEFAULT_MODE_COMMAND))
+      {
+          SIM800.SetMode(WORK_MODE::STANDART);
+      }
+
+    }
+    clear_buffer();
+
+
+
+    return true;
 }
 
 void int0_func()
