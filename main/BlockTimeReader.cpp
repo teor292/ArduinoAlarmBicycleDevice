@@ -5,52 +5,6 @@ BlockTimeReader::BlockTimeReader(SoftwareSerial& serial, millisDelay &delay_obje
  time_delay_(delay_object)
  {}
 
-bool BlockTimeReader::ReadChar(char& c, const int timeout)
-{
-    time_delay_.start(timeout);
-    while (!time_delay_.justFinished())
-    {
-      if (!serial_.available()) continue;
-      c = (char)serial_.read();
-      return true;
-    } 
-    return false;
-}
-
-bool BlockTimeReader::read_response_(SafeString& result, const int timeout, unsigned char count_new_lines)
-{
-    //must ignore input and get count end of line after input
-    result.clear();
-    time_delay_.start(timeout);
-
-    while (!time_delay_.justFinished())
-    {
-        if (!serial_.available()) continue;
-        char c = (char)serial_.read();
-        if (10 == c)
-        {
-            break;
-        }
-    }
-    unsigned char cnt = 0;
-    while (cnt < count_new_lines 
-        && !time_delay_.justFinished() 
-        && time_delay_.isRunning())
-    {
-        if (!serial_.available()) continue;
-        char c = (char)serial_.read();
-        result += c;
-        if (10 == c)
-        {
-            ++cnt;
-        }
-    }
-    PRINT(F("Current line: "));
-    PRINTLN(result);
-    PRINTLN(F("Current line end"));
-
-    return cnt == count_new_lines;
-}
 
 bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
 {
@@ -87,37 +41,44 @@ bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
 bool BlockTimeReader::ReadLine(SafeString& test_string, const int timeout)
 {
     test_string.clear();
-    return NClReadLine(test_string, timeout);
+    return nc_read_until_(test_string, timeout, nullptr, 10);
 }
 
 bool BlockTimeReader::NClReadLine(SafeString& test_string, const int timeout)
 {
-    time_delay_.start(timeout);
-    while (!time_delay_.justFinished())
-    {
-        if (!serial_.available()) continue;
-        char c = (char)serial_.read();
-        test_string += c;
-        if (10 == c) return true;
-    }
-    PRINT(F("line: "));
-    PRINTLN(test_string);
-    PRINT(F(":end "));
-    return false;
+    return nc_read_until_(test_string, timeout, nullptr, 10);
 }
 
 bool BlockTimeReader::ReadUntil(SafeString& buffer, const int timeout, const char *what)
 {
+    return read_until_(buffer, timeout, what, 10);
+}
+
+bool BlockTimeReader::ReadUntil(SafeString& buffer, const int timeout, char what)
+{
+    return read_until_(buffer, timeout, nullptr, what);
+}
+
+
+bool BlockTimeReader::read_until_(SafeString& buffer, const int timeout, const char *what, char c)
+{
     buffer.clear();
+    return nc_read_until_(buffer, timeout, what, c);
+}
+
+bool BlockTimeReader::nc_read_until_(SafeString& buffer, const int timeout, const char *what, char c)
+{
     time_delay_.start(timeout);
 
     while (!time_delay_.justFinished())
     {
         if (!serial_.available()) continue;
-        char c = (char)serial_.read();
-        buffer += c;
-        if (10 != c) continue;
+        char c1 = (char)serial_.read();
+        buffer += c1;
+        if (c != c1) continue;
 
+        if (nullptr == what) return true;
+        
         buffer.trim();
         if (buffer.startsWith(what)) return true;
         buffer.clear();

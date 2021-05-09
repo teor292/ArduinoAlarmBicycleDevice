@@ -128,13 +128,11 @@ void Sms::SendSms(const char *text)
    // int count_new_lines = count_new_lines_plus_one(text);
     serial_.print(AT_CMGS);
     serial_.println(phone_);
-    createSafeString(tmp_header, sizeof(AT_CMGS) + sizeof(phone_));
-    tmp_header = AT_CMGS;
-    tmp_header += phone_;
-    //read AT+CMGS=phone
-    if (!reader_.ReadUntil(g_string_, 5000, tmp_header.c_str()))
+
+    //read >
+    if (!reader_.ReadUntil(g_string_, 6000, '>'))
     {
-      PRINTLN(F("AT not found"));
+      PRINTLN(F("> not found"));
       //if not found -> not return, continue
       //because sim800L can wait for text and symbol 26
       //If sim800L will wait -> we can't enter other commands
@@ -142,17 +140,7 @@ void Sms::SendSms(const char *text)
     }
     PRINTLN(F("AT::::"));
     PRINT(g_string_);
-    char enter_symbol;
-    if (!reader_.ReadChar(enter_symbol, 1000)) 
-    {
-      PRINTLN(F("no found23"));
-      //continue
-    }
-    if ('>' != enter_symbol)
-    {
-        PRINTLN(F("no found > symbol"));
-        //continue
-    }
+
     serial_.print(text);
 
     serial_.write(26);
