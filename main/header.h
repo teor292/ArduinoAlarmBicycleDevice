@@ -1,7 +1,5 @@
 #pragma once
 
-#define CMT
-
 #define DEBUG
 
 #ifdef DEBUG

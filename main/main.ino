@@ -222,15 +222,14 @@ void perform_command(const char* command)
 bool set_sms_mode(const char *mode)
 {
   SIM800.println(mode);
-  if (!reader.ReadUntil(test_string, 5000, mode))
+  if (!reader.ReadStatusResponse(test_string, 5000))
   {
     PRINTLN(F("Read until failed"));
     PRINTLN(test_string);
     return false;
   }
-  if (!reader.ReadLine(test_string, 1000)) return false;
 
-  return test_string.startsWith(OK);
+  return -1 != test_string.indexOf(OK);
 }
 
 void clear_buffer()
@@ -429,9 +428,26 @@ void loop()
         }
         if (tmp_str == ON)
         {
-          set_alarm_and_sms(1);
           //when alarm enable -> disable sleep mode
-          SIM800.SetMode(WORK_MODE::STANDART);
+          bool ok = WORK_MODE::SLEEP != SIM800.GetMode();
+          if (WORK_MODE::SLEEP == SIM800.GetMode())
+          {
+            if (perform_sim800_command(DEFAULT_MODE_COMMAND))
+            {
+              PRINTLN(F("SMST"));
+              SIM800.SetMode(WORK_MODE::STANDART);
+              ok = true;
+            }
+          }
+          if (ok)
+          {
+            set_alarm_and_sms(1);
+          } else
+          {
+            sms_one.SendSms(ERROR);
+          }
+
+
         }
         else if (tmp_str == OFF)
         {
@@ -499,17 +515,12 @@ bool get_signal_strength(SafeString& str)
 {
   SIM800.println("AT+CSQ");
 
-  if (!reader.ReadSomeResponse(test_string, 500))
-  {
-    //Serial.println("Error read report from signal strength");
-    return false;
-  }
-  //Serial.print("Read report: ");
- // Serial.print(test_string);
- // Serial.print("Read report end");
-  if (!test_string.startsWith("+CSQ: ")) return false;
+  if (!reader.ReadStatusResponse(test_string, 1000)) return false;
 
-  test_string.substring(str, 6, 8);
+  auto index = test_string.indexOf("+CSQ:");
+  if (-1 == index) return false;
+
+  test_string.substring(str, index + 6, index + 8);
 
   str += " (0-31)";
   return true;

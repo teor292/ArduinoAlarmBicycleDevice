@@ -13,21 +13,6 @@ namespace
       if (!isdigit(str[index + 1])) return false;
       return true;
   }
-
-  int count_new_lines_plus_one(const char *text)
-  {
-    int count = 1;
-    createSafeStringFromCharPtr(tmp_str, const_cast<char*>(text));
-    int index = -1;
-    while (true)
-    {
-      index = tmp_str.indexOf('\n', index + 1);
-      if (-1 == index) break;
-
-      ++count;
-    }
-    return count;
-  }
 }
 
 Sms::Sms(SoftwareSerial &serial, BlockTimeReader& reader, SafeString& g_string) 
@@ -36,6 +21,173 @@ Sms::Sms(SoftwareSerial &serial, BlockTimeReader& reader, SafeString& g_string)
    g_string_(g_string)
 {}
 
+bool Sms::TryReadForwardSmsFromSerial(SafeString& result)
+{
+  if (!reader_.ReadLine(result, 1000)) return false;
+
+  if (!result.startsWith("CMT")) return false;
+  
+  if (!reader_.NClReadLine(result, 1000)) return false;
+  PRINTLN(result);
+
+  createSafeStringFromCharArray(quoted_phone_number, phone_);
+  if (!cmt_extract_phone_number_(result, quoted_phone_number)) return false;
+  PRINTLN(quoted_phone_number);
+
+  createSafeStringFromCharArray(date_str, date_);
+  extract_date_(result, date_str, 2);
+  PRINTLN(date_str);
+    
+  auto index = result.indexOf((char)10);
+  if (-1 == index) return false;
+
+  //read sms text
+  createSafeStringFromCharArray(sms_text, text_);
+  result.substring(sms_text, index + 1);
+  PRINT(F("SMS TEXT: "));
+  PRINT(sms_text);
+
+  return true;
+}
+
+void Sms::DeleteAllSms(SafeString& buffer)
+{
+  buffer.clear();
+  serial_.println("AT+CMGDA=\"DEL ALL\"");
+  //nothing to do with error
+  reader_.ReadStatusResponse(buffer, 25000);
+}
+
+bool Sms::cmt_extract_phone_number_(SafeString& source, SafeString& dst)
+{
+    int index = source.indexOf(':');
+    if (-1 == index) return false;
+    int last_index = source.indexOf(',', index + 1);
+    if (-1 == last_index) return false;
+    source.substring(dst, index + 2, last_index);
+    return true;
+}
+
+bool Sms::extract_date_(SafeString& source, SafeString& dst, unsigned char count_comas_omit)
+{
+  //+CMGR: "REC UNREAD","<phone>","","21/04/27,18:45:05+12"
+  //+CMT: "<phone>","","21/05/01,13:44:00+12"
+    int index = -1;
+    for ( int i = 0; i < count_comas_omit; ++i)
+    {
+        index = source.indexOf(',', index + 1);
+        if (-1 == index) return false;
+    }
+    //next must be quote
+    ++index;
+    if ('\"' != source[index]) return false;
+
+    ++index;
+    int offset = 0;
+    for (int i = 0; i < 2; ++i, offset += 3)
+    {
+      if (!check_next_two_is_digits(source, index + offset)) return false;
+
+      if ('/' != source[index + offset + 2]) return false;
+    }
+    if (!check_next_two_is_digits(source, index + offset)) return false;
+    offset += 2;
+    if (',' != source[index + offset]) return false;
+    ++offset;
+    for (int i = 0; i < 2; ++i, offset += 3)
+    {
+      if (!check_next_two_is_digits(source, index + offset)) return false;
+
+      if (':' != source[index + offset + 2]) return false;
+    }
+    if (!check_next_two_is_digits(source, index + offset)) return false;
+
+    source.substring(dst, index, index + offset + 2);
+
+    return true;
+}
+
+const char* Sms::GetPhone() const
+{
+    return phone_;
+}
+
+const char* Sms::GetTime() const
+{
+    return date_;
+}
+
+char* Sms::GetText()
+{
+  return text_;
+}
+
+void Sms::SendSms(const char *text)
+{
+    static const char AT_CMGS[] = "AT+CMGS=";
+   // int count_new_lines = count_new_lines_plus_one(text);
+    serial_.print(AT_CMGS);
+    serial_.println(phone_);
+    createSafeString(tmp_header, sizeof(AT_CMGS) + sizeof(phone_));
+    tmp_header = AT_CMGS;
+    tmp_header += phone_;
+    //read AT+CMGS=phone
+    if (!reader_.ReadUntil(g_string_, 5000, tmp_header.c_str()))
+    {
+      PRINTLN(F("AT not found"));
+      //if not found -> not return, continue
+      //because sim800L can wait for text and symbol 26
+      //If sim800L will wait -> we can't enter other commands
+      //return;
+    }
+    PRINTLN(F("AT::::"));
+    PRINT(g_string_);
+    char enter_symbol;
+    if (!reader_.ReadChar(enter_symbol, 1000)) 
+    {
+      PRINTLN(F("no found23"));
+      //continue
+    }
+    if ('>' != enter_symbol)
+    {
+        PRINTLN(F("no found > symbol"));
+        //continue
+    }
+    serial_.print(text);
+
+    serial_.write(26);
+
+    if (!reader_.ReadStatusResponse(g_string_, 60000))
+    {
+        PRINTLN(F("FRSMSRP"));
+        PRINTLN(g_string_);
+        return;
+    }
+    PRINTLN(g_string_);
+    #if defined(DEBUG)
+
+    auto index = g_string_.indexOf("OK");
+    if (-1 == index)
+    {
+      PRINTLN(F("SMS FAIL"));
+    } else
+    {
+      PRINTLN(F("SMS OK"));
+    }
+    #endif
+
+
+    
+}
+
+
+void Sms::SetPhone(const char* phone)
+{
+  createSafeStringFromCharArray(tmp, phone_);
+  tmp = phone;
+}
+
+/*
 #if defined(CMGR)
 bool Sms::ReadFromSerial(SafeString& cmti)
 {
@@ -121,198 +273,4 @@ void Sms::DeleteReadIncomeMessages()
 }
 
 #endif
-
-#ifdef CMT
-
-bool Sms::TryReadForwardSmsFromSerial(SafeString& result)
-{
-  if (!reader_.ReadLine(result, 1000)) return false;
-
-  if (!result.startsWith("CMT")) return false;
-  
-  if (!reader_.NClReadLine(result, 1000)) return false;
-  PRINTLN(result);
-
-  createSafeStringFromCharArray(quoted_phone_number, phone_);
-  if (!cmt_extract_phone_number_(result, quoted_phone_number)) return false;
-  PRINTLN(quoted_phone_number);
-
-  createSafeStringFromCharArray(date_str, date_);
-  extract_date_(result, date_str, 2);
-  PRINTLN(date_str);
-    
-  auto index = result.indexOf((char)10);
-  if (-1 == index) return false;
-
-  //read sms text
-  createSafeStringFromCharArray(sms_text, text_);
-  result.substring(sms_text, index + 1);
-  PRINT(F("SMS TEXT: "));
-  PRINT(sms_text);
-
-  return true;
-}
-
-void Sms::DeleteAllSms(SafeString& buffer)
-{
-  buffer.clear();
-  serial_.println("AT+CMGDA=\"DEL ALL\"");
-  if (!reader_.ReadStatusResponse(buffer, 25000)) return;
-  if (buffer.startsWith("OK")) return;
-  //by description if error occures there is error description after
-  //ERROR message
-  reader_.ReadStatusResponse(buffer, 5000);
-}
-
-bool Sms::cmt_extract_phone_number_(SafeString& source, SafeString& dst)
-{
-    int index = source.indexOf(':');
-    if (-1 == index) return false;
-    int last_index = source.indexOf(',', index + 1);
-    if (-1 == last_index) return false;
-    source.substring(dst, index + 2, last_index);
-    return true;
-}
-#endif
-
-bool Sms::extract_date_(SafeString& source, SafeString& dst, unsigned char count_comas_omit)
-{
-  //+CMGR: "REC UNREAD","<phone>","","21/04/27,18:45:05+12"
-  //+CMT: "<phone>","","21/05/01,13:44:00+12"
-    int index = -1;
-    for ( int i = 0; i < count_comas_omit; ++i)
-    {
-        index = source.indexOf(',', index + 1);
-        if (-1 == index) return false;
-    }
-    //next must be quote
-    ++index;
-    if ('\"' != source[index]) return false;
-
-    ++index;
-    int offset = 0;
-    for (int i = 0; i < 2; ++i, offset += 3)
-    {
-      if (!check_next_two_is_digits(source, index + offset)) return false;
-
-      if ('/' != source[index + offset + 2]) return false;
-    }
-    if (!check_next_two_is_digits(source, index + offset)) return false;
-    offset += 2;
-    if (',' != source[index + offset]) return false;
-    ++offset;
-    for (int i = 0; i < 2; ++i, offset += 3)
-    {
-      if (!check_next_two_is_digits(source, index + offset)) return false;
-
-      if (':' != source[index + offset + 2]) return false;
-    }
-    if (!check_next_two_is_digits(source, index + offset)) return false;
-
-    source.substring(dst, index, index + offset + 2);
-
-    return true;
-}
-
-const char* Sms::GetPhone() const
-{
-    return phone_;
-}
-
-const char* Sms::GetTime() const
-{
-    return date_;
-}
-
-char* Sms::GetText()
-{
-  return text_;
-}
-
-void Sms::SendSms(const char *text)
-{
-    static const char AT_CMGS[] = "AT+CMGS=";
-    int count_new_lines = count_new_lines_plus_one(text);
-    serial_.print(AT_CMGS);
-    serial_.println(phone_);
-    createSafeString(tmp_header, sizeof(AT_CMGS) + sizeof(phone_));
-    tmp_header = AT_CMGS;
-    tmp_header += phone_;
-    //read AT+CMGS=phone
-    if (!reader_.ReadUntil(g_string_, 5000, tmp_header.c_str()))
-    {
-      PRINTLN(F("AT not found"));
-      //if not found -> not return, continue
-      //because sim800L can wait for text and symbol 26
-      //If sim800L will wait -> we can't enter other commands
-      //return;
-    }
-    PRINTLN(F("AT::::"));
-    PRINT(g_string_);
-    char enter_symbol;
-    if (!reader_.ReadChar(enter_symbol, 1000)) 
-    {
-      PRINTLN(F("no found23"));
-      //continue
-    }
-    if ('>' != enter_symbol)
-    {
-        PRINTLN(F("no found > symbol"));
-        //continue
-    }
-    serial_.print(text);
-
-    serial_.write(26);
-
-
-    //read text
-    if (!reader_.ReadLine(g_string_, 60000)) 
-    {
-      PRINT(F("text not found"));
-      return;
-    }
-    PRINT(F("Text from answer: "));
-    PRINT(g_string_);
-    for ( int i = 1; i < count_new_lines; ++i)
-    {
-      //read additional text
-      if (!reader_.ReadLine(g_string_, 60000)) 
-      {
-        PRINT(F("additional text not found"));
-        return;
-      }
-      PRINT(F("Additional Text from answer: "));
-      PRINT(g_string_);
-    }
-
-
-    //read cmgs line
-    if (!reader_.ReadLine(g_string_, 60000)) 
-    {
-      PRINT(F("cmgs not found"));
-      return;
-    }
-    PRINT(F("CMGS TEXT: "));
-    PRINT(g_string_);
-
-    //read empty line
-    if (!reader_.ReadLine(g_string_, 1000))
-    {
-          PRINT(F("empty line not found2"));
-          return;
-    }
-    //read status
-    if (!reader_.ReadLine(g_string_, 2000))
-    {
-          PRINT(F("sttaus line not found2"));
-          return;
-    }
-    PRINT(g_string_);
-}
-
-
-void Sms::SetPhone(const char* phone)
-{
-  createSafeStringFromCharArray(tmp, phone_);
-  tmp = phone;
-}
+*/

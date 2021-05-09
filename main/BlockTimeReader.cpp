@@ -84,11 +84,6 @@ bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
 
 }
 
-bool BlockTimeReader::ReadSomeResponse(SafeString& result, const int timeout)
-{
-    return read_response_(result, timeout, 3);
-}
-
 bool BlockTimeReader::ReadLine(SafeString& test_string, const int timeout)
 {
     test_string.clear();

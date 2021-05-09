@@ -11,7 +11,11 @@ bool BatteryReader::ReadBattery()
 {
     serial_.println("AT+CBC");
 
-    if (!reader_.ReadSomeResponse(tmp_string_, 1000)) return false;
+    if (!reader_.ReadStatusResponse(tmp_string_, 1000)) return false;
+
+    auto tmp_index = tmp_string_.indexOf("+CBC:");
+    if (-1 == tmp_index) return false;
+    tmp_string_.substring(tmp_string_, tmp_index);
 
     int index_start_percent = tmp_string_.indexOf(',') + 1;
     if (-1 == index_start_percent) return false;
