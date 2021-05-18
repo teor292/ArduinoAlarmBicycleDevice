@@ -16,7 +16,6 @@
 #include "VibroStater.h"
 #include "BookReader.h"
 #include "Settings.h"
-#include <avr/eeprom.h>
 #include "work_mode.h"
 #include "ModeSerial.h"
 #include <LowPower.h>
@@ -306,7 +305,12 @@ void loop()
     //awake 1 per hour
     for (int i = 0; i < 3600 / 8 && !f_extern_interrupt; ++i)
     {
+      #if defined(__SAMD21G18A__)
+      //currently do nothing
+      delay(8000);
+      #else
       LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+      #endif
       //millis don't work during power down, so add it
       battery_checker.AddToRealTime(8 * 1000);   
     }
