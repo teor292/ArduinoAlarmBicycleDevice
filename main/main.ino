@@ -46,7 +46,7 @@ BatteryReader battery(test_string, SIM800, reader);
 BatteryChecker battery_checker(battery);
 Sms sms_one(SIM800, reader, test_string);
 
-VibroStater vibro(5);
+VibroStater vibro(VIBRO_PIN);
 BookReader adminer(SIM800, reader);
 
 

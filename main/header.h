@@ -1,6 +1,6 @@
 #pragma once
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 
@@ -21,9 +21,11 @@
 #if defined(__SAMD21G18A__)
 
 #define AWAKE_SIM800_PIN 9
+#define VIBRO_PIN 8
 
 #else
 
 #define AWAKE_SIM800_PIN 2
+#define VIBRO_PIN 5
 
 #endif
