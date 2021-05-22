@@ -1,6 +1,6 @@
 #include "BatteryReader.h"
 
-BatteryReader::BatteryReader(SafeString& tmp_string, SoftwareSerial& serial, BlockTimeReader &reader)
+BatteryReader::BatteryReader(SafeString& tmp_string, Stream& serial, BlockTimeReader &reader)
     : tmp_string_(tmp_string),
     serial_(serial),
     reader_(reader),

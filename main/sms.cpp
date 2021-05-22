@@ -15,7 +15,7 @@ namespace
   }
 }
 
-Sms::Sms(SoftwareSerial &serial, BlockTimeReader& reader, SafeString& g_string) 
+Sms::Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string) 
  : serial_(serial),
    reader_(reader),
    g_string_(g_string)

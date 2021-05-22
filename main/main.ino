@@ -6,7 +6,6 @@
 #include <SafeStringReader.h>
 #include <SafeStringStream.h>
 
-#include <SoftwareSerial.h>
 #include "header.h"
 #include "BlockTimeReader.h"
 #include "BatteryReader.h"
@@ -18,15 +17,25 @@
 #include "Settings.h"
 #include "work_mode.h"
 #include "ModeSerial.h"
-#include <LowPower.h>
+#include "sleep_utils.h"
 
 //#define SIM800_INITIALIZATION
 
-const int RXPin = 8, TXPin = 9;
 //if change baud rate -> change command AT+IPR!!!
 const uint32_t GPSBaud = 9600;
 
-ModeSerial SIM800(RXPin, TXPin);        // 8 - RX Arduino (TX SIM800L), 9 - TX Arduino (RX SIM800L)
+//with samd this is Uart on SERCOM2 (disable I2C)
+ModeSerial SIM800; 
+
+#if defined(__SAMD21G18A__)
+
+void SERCOM2_Handler()
+{
+  SIM800.IrqHandler();
+}
+
+#endif
+
 
 createSafeString(test_string, 200);
 millisDelay time_delay;
@@ -71,8 +80,7 @@ bool detect_sim800_mode_and_set_def();
 
 bool send_alarm_on_low_battery = true;
 Settings settings;
-//flag indicating INT0
-bool f_extern_interrupt = false;
+
 //time when arduino was in sleep mode last time
 unsigned long last_enter_sleep_time = 0;
 
@@ -82,11 +90,20 @@ void setup()
 {
   //configure here because sim800l due to lack of amperage can
   //reboot while initialization if D2 (INT0) in in default mode
-  pinMode(2, INPUT); 
+  pinMode(AWAKE_SIM800_PIN, INPUT); 
 
-  Serial.begin(GPSBaud);            
+  #if defined(DEBUG)
+  Serial.begin(GPSBaud); 
+
+  #if defined(__SAMD21G18A__)
+  //wait initialization
+  while (!Serial);           
+  #endif
+  
   PRINTLN(F("Start!"));
   SafeString::setOutput(Serial);
+
+  #endif
 
   settings.Load();
   vibro.EnableAlarm(settings.alarm);
@@ -99,6 +116,7 @@ void setup()
   SIM800.SetMode(WORK_MODE::SLEEP);     
 
   perform_command("AT");
+ // Serial1.
 
   PRINTLN(F("AT ANSWER GET"));
 
@@ -158,6 +176,8 @@ void setup()
 #endif
 }
 
+void wait_for_ok();
+
 bool detect_sim800_mode_and_set_def()
 {
     //read mode
@@ -173,10 +193,12 @@ bool detect_sim800_mode_and_set_def()
     {
       SIM800.SetMode(WORK_MODE::STANDART);
       PRINTLN(F("STM"));
+      wait_for_ok();
     } 
     else
     {
       PRINTLN(F("SLM"));
+      wait_for_ok();
       clear_buffer();
       if (perform_sim800_command(DEFAULT_MODE_COMMAND))
       {
@@ -184,6 +206,9 @@ bool detect_sim800_mode_and_set_def()
       }
 
     }
+
+     
+
     clear_buffer();
 
 
@@ -191,10 +216,13 @@ bool detect_sim800_mode_and_set_def()
     return true;
 }
 
-void int0_func()
+void wait_for_ok()
 {
-  f_extern_interrupt = true;
-  PRINT("INT");
+    int index = test_string.indexOf(OK);
+    if (-1 == index)
+    {
+      reader.ReadUntil(test_string, 1000, OK);
+    }
 }
 
 
@@ -202,6 +230,8 @@ void perform_command(const char* command)
 {
   while (true)
   {
+    PRINTLN("CMD:::");
+    PRINTLN(command);
     SIM800.println(command);
     if (reader.ReadStatusResponse(test_string, 5000))
     {
@@ -300,26 +330,14 @@ void loop()
     if (current_time - last_enter_sleep_time < 5000) return;
     last_enter_sleep_time = current_time;
 
-    attachInterrupt(0, int0_func, FALLING);
+    go_to_sleep(battery_checker);
 
-    //awake 1 per hour
-    for (int i = 0; i < 3600 / 8 && !f_extern_interrupt; ++i)
-    {
-      #if defined(__SAMD21G18A__)
-      //currently do nothing
-      delay(8000);
-      #else
-      LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
-      #endif
-      //millis don't work during power down, so add it
-      battery_checker.AddToRealTime(8 * 1000);   
-    }
     //reset last awake time because millis don't work while sleep
     SIM800.ResetTime();
 
-    detachInterrupt(0);
 
     was_in_sleep_mode = true;
+
 
     PRINTLN(F("AWAKE"));
   );

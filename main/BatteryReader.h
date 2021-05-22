@@ -1,14 +1,14 @@
 #pragma once
 
 #include "SafeString.h"
-#include <SoftwareSerial.h>
+#include <Stream.h>
 #include "BlockTimeReader.h"
 
 class BatteryReader
 {
     public:
 
-        explicit BatteryReader(SafeString& tmp_string, SoftwareSerial& serial, BlockTimeReader &reader);
+        explicit BatteryReader(SafeString& tmp_string, Stream& serial, BlockTimeReader &reader);
 
         bool ReadBattery();
 
@@ -18,7 +18,7 @@ class BatteryReader
     private:
         
         SafeString& tmp_string_;
-        SoftwareSerial& serial_;
+        Stream& serial_;
         BlockTimeReader& reader_;
         char battery_result_[21];
         unsigned char digit_value_;

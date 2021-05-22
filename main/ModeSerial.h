@@ -1,13 +1,14 @@
 #pragma once
 
 #include "work_mode.h"
-#include <SoftwareSerial.h>
 
-class ModeSerial : public SoftwareSerial
+#include "serial_header.h"
+
+class ModeSerial : public CUART
 {
     public:
 
-        using SoftwareSerial::SoftwareSerial;
+        explicit ModeSerial();
 
         void SetMode(WORK_MODE mode);
         WORK_MODE GetMode();

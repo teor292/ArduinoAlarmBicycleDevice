@@ -2,8 +2,7 @@
 
 #include "SafeString.h"
 
-#include <SoftwareSerial.h>
-#include <HardwareSerial.h>
+#include <Stream.h>
 #include "BlockTimeReader.h"
 
 #include "header.h"
@@ -13,7 +12,7 @@ class Sms
 {
     public:
 
-        explicit Sms(SoftwareSerial &serial, BlockTimeReader& reader, SafeString& g_string);
+        explicit Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string);
 
         bool TryReadForwardSmsFromSerial(SafeString& result);
         void DeleteAllSms(SafeString& buffer);
@@ -28,7 +27,7 @@ class Sms
 
     private:
 
-        SoftwareSerial &serial_;
+        Stream &serial_;
         BlockTimeReader& reader_;
         SafeString& g_string_;
 

@@ -1,6 +1,6 @@
 #include "BlockTimeReader.h"
 
-BlockTimeReader::BlockTimeReader(SoftwareSerial& serial, millisDelay &delay_object)
+BlockTimeReader::BlockTimeReader(Stream& serial, millisDelay &delay_object)
  : serial_(serial),
  time_delay_(delay_object)
  {}
@@ -80,7 +80,14 @@ bool BlockTimeReader::nc_read_until_(SafeString& buffer, const int timeout, cons
         if (nullptr == what) return true;
         
         buffer.trim();
-        if (buffer.startsWith(what)) return true;
+        if (buffer.startsWith(what)) 
+        {
+            PRINT("nc_read_until true: ");
+            PRINTLN(buffer);
+            return true;
+        }
+        PRINT("nc_read_until false: ");
+        PRINTLN(buffer);
         buffer.clear();
     }
     return false;

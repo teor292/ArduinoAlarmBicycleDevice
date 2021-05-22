@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SoftwareSerial.h>
+#include <Stream.h>
 #include "SafeString.h"
 #include "BlockTimeReader.h"
 
@@ -8,7 +8,7 @@ class BookReader
 {
     public:
 
-        explicit BookReader(SoftwareSerial& serial, BlockTimeReader &reader);
+        explicit BookReader(Stream& serial, BlockTimeReader &reader);
 
         bool LoadAdminPhone(SafeString &buffer);
 
@@ -20,7 +20,7 @@ class BookReader
 
     private:
 
-        SoftwareSerial& serial_;
+        Stream& serial_;
         BlockTimeReader& reader_;
         char admin_phone_number_[19]{0};
 };

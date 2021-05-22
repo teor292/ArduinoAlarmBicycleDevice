@@ -1,6 +1,6 @@
 #include "BookReader.h"
 
-BookReader::BookReader(SoftwareSerial& serial, BlockTimeReader& reader)
+BookReader::BookReader(Stream& serial, BlockTimeReader& reader)
     : serial_(serial),
     reader_(reader)
 {}
