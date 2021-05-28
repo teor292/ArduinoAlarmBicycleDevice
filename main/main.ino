@@ -18,6 +18,7 @@
 #include "work_mode.h"
 #include "ModeSerial.h"
 #include "sleep_utils.h"
+#include "MillisCallback.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -38,10 +39,11 @@ void SERCOM2_Handler()
 
 
 createSafeString(test_string, 200);
-millisDelay time_delay;
+
+MillisReadDelay time_delay(SIM800);
 
 
-BlockTimeReader reader(SIM800, time_delay);
+BlockTimeReader reader(time_delay);
 BatteryReader battery(test_string, SIM800, reader);
 BatteryChecker battery_checker(battery);
 Sms sms_one(SIM800, reader, test_string);

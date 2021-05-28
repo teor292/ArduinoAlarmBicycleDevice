@@ -1,8 +1,7 @@
 #include "BlockTimeReader.h"
 
-BlockTimeReader::BlockTimeReader(Stream& serial, millisDelay &delay_object)
- : serial_(serial),
- time_delay_(delay_object)
+BlockTimeReader::BlockTimeReader(MillisReadDelay& millis)
+ : millis_(millis)
  {}
 
 
@@ -10,12 +9,11 @@ bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
 {
     //must ignore input and get count end of line after input
     result.clear();
-    time_delay_.start(timeout);
-
-    while (!time_delay_.justFinished())
+    millis_.start(timeout);
+    int c_read = 0;
+    while (millis_.Read(c_read))
     {
-        if (!serial_.available()) continue;
-        char c = (char)serial_.read();
+        char c = (char)c_read;
         result += c;
         if (10 == c) //LF
         {
@@ -68,12 +66,11 @@ bool BlockTimeReader::read_until_(SafeString& buffer, const int timeout, const c
 
 bool BlockTimeReader::nc_read_until_(SafeString& buffer, const int timeout, const char *what, char c)
 {
-    time_delay_.start(timeout);
-
-    while (!time_delay_.justFinished())
+    millis_.start(timeout);
+    int c_read = 0;
+    while (millis_.Read(c_read))
     {
-        if (!serial_.available()) continue;
-        char c1 = (char)serial_.read();
+        char c1 = (char)c_read;
         buffer += c1;
         if (c != c1) continue;
 
