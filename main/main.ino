@@ -19,6 +19,7 @@
 #include "ModeSerial.h"
 #include "sleep_utils.h"
 #include "MillisCallback.h"
+#include "GpsWorker.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -37,10 +38,16 @@ void SERCOM2_Handler()
 
 #endif
 
+//this callback is neccessary for retreiving gps
+//data while SIM800 work (send sms, etc.)
+void wait_callback();
+
+
+
 
 createSafeString(test_string, 200);
 
-MillisReadDelay time_delay(SIM800);
+MillisReadDelay time_delay(SIM800, wait_callback);
 
 
 BlockTimeReader reader(time_delay);
@@ -50,6 +57,7 @@ Sms sms_one(SIM800, reader, test_string);
 
 VibroStater vibro(VIBRO_PIN);
 BookReader adminer(SIM800, reader);
+
 
 
 
@@ -87,6 +95,23 @@ Settings settings;
 unsigned long last_enter_sleep_time = 0;
 
 bool was_in_sleep_mode = false;
+
+#if defined(GPS)
+
+GpsWorker gpser(Serial1);
+const char GET_GPS[] = "get gps";
+
+void do_get_gps();
+
+#endif
+
+
+void wait_callback()
+{
+  #if defined(GPS)
+  gpser.ReadFromStreamIfAvailable();
+  #endif
+}
 
 void setup() 
 {
@@ -319,10 +344,12 @@ void loop()
     f_extern_interrupt = false;
     was_in_sleep_mode = false;
 
+
+
     //call check battery here
     //because it is neccessary check battery
     //when f_extern_interrupt is 0
-    //Atmega can awake not by timer
+    //microcontroller can awake not by timer
     //but by sms, so it must read sms before check battery
     do_battery();
 
@@ -512,11 +539,32 @@ void loop()
         }
         return;
     }
+    #if defined(GPS)
+
+    if (sms_text.startsWith(GET_GPS))
+    {
+      do_get_gps();
+      return;
+    }
+
+    #endif
     //if smth unknown -> do nothing
       
   }
 }
 
+#if defined(GPS)
+
+void do_get_gps()
+{
+  auto gps = gpser.Gps();
+  if (gps.location.isValid())
+  {
+
+  }
+}
+
+#endif
 
 bool perform_sim800_command(const char *cmd)
 {

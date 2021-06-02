@@ -31,7 +31,7 @@ class Sms
         BlockTimeReader& reader_;
         SafeString& g_string_;
 
-        char phone_[19];
+        char phone_[PHONE_BUF_LENGTH];
         char date_[18];
         char text_[25];
 

@@ -29,3 +29,5 @@
 #define VIBRO_PIN 5
 
 #endif
+
+#define PHONE_BUF_LENGTH 19
