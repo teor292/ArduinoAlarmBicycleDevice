@@ -19,7 +19,7 @@ struct UBX_Base
 template<typename T>
 class UBX_MESSAGE_
 {
-        uint8_t header_[2] = { 0xb5, 0x62};
+       volatile uint8_t header_[2] = { 0xb5, 0x62};
     public:
 
         T message;
@@ -175,8 +175,19 @@ struct UBX_RXM_PMREQ_BASE_ : UBX_Base
     };
 };
 
+//output message for check aknowledge of send message
+struct UBX_ACK_BASE_ : UBX_Base
+{
+    UBX_ACK_BASE_()
+        : UBX_Base{0x0, 0x0, 0x0}
+    {}
+    uint8_t clsID{0};
+    uint8_t msgID{0};
+};
+
 using UBX_CFG_PM2 = UBX_MESSAGE_<UBX_CFG_PM2_BASE_>;
 using UBX_CFG_RXM = UBX_MESSAGE_<UBX_CFG_RXM_BASE_>;
 using UBX_CFG_REQUEST_RATE = UBX_MESSAGE_<UBX_CFG_REQUEST_RATE_BASE_>;
 using UBX_CFG_RATE = UBX_MESSAGE_<UBX_CFG_RATE_BASE_>;
 using UBX_RXM_PMREQ = UBX_MESSAGE_<UBX_RXM_PMREQ_BASE_>;
+using UBX_ACK = UBX_MESSAGE_<UBX_ACK_BASE_>;
