@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <Stream.h>
+#include "millisDelay.h"
 
 struct UBX_Base
 {
@@ -15,11 +16,20 @@ struct UBX_Base
     uint16_t length;
 };
 
+enum class READ_UBX_RESULT : uint8_t
+{
+    OK = 0,
+    ERROR_TIMEOUT = 1,
+    ERROR_MESSAGE, 
+    ERROR_CRC
+};
+
+using NonUbxCallback = void(*)(uint8_t readed_char);
 
 template<typename T>
 class UBX_MESSAGE_
 {
-       volatile uint8_t header_[2] = { 0xb5, 0x62};
+       uint8_t header_[2] = { 0xb5, 0x62};
     public:
 
         T message;
@@ -33,12 +43,46 @@ class UBX_MESSAGE_
                 stream.write(ptr[i]);
             }
         }
+
+        READ_UBX_RESULT Read(Stream& stream, NonUbxCallback callback = nullptr, int timeout = 1000)
+        {   
+            millisDelay millis;
+            millis.start(timeout);
+            auto header_result = read_header_(stream, callback, millis);
+            if (READ_UBX_RESULT::OK != header_result) return header_result;
+            auto body_header_result = read_header_body_part_(stream, callback, millis);
+            if (READ_UBX_RESULT::OK != body_header_result) return body_header_result;
+
+            auto remain_read = sizeof(message) - sizeof(UBX_Base) + 2 * sizeof(uint8_t);
+            auto ptr = reinterpret_cast<uint8_t*>(&message) + sizeof(UBX_Base);
+            while (!millis.justFinished() 
+                && millis.isRunning() 
+                && remain_read > 0)
+            {
+                if (!stream.available()) continue;
+                const uint8_t c = static_cast<uint8_t>(stream.read());
+                *ptr = c;
+                ++ptr;
+                --remain_read;
+            }
+            if (0 != remain_read) return READ_UBX_RESULT::ERROR_TIMEOUT;
+            auto read_ck_a = ck_a_;
+            auto read_ck_b = ck_b_;
+            crc_();
+            if (read_ck_a != ck_a_
+                || read_ck_b != ck_b_) return READ_UBX_RESULT::ERROR_CRC;
+
+            return READ_UBX_RESULT::OK;
+        }
+
     private:
         uint8_t ck_a_{0};
         uint8_t ck_b_{0};
 
         void crc_()
         {
+            ck_a_ = 0;
+            ck_b_ = 0;
             auto ptr = reinterpret_cast<uint8_t*>(&message); 
             for (size_t i = 0; i < sizeof(message); ++i)
             {
@@ -46,6 +90,60 @@ class UBX_MESSAGE_
                 ck_b_ = ck_b_ + ck_a_;
             }
         }
+
+        READ_UBX_RESULT read_header_(Stream& stream, NonUbxCallback callback, millisDelay &millis)
+        {
+            return read_same_buffer_(stream, header_, sizeof(header_), callback, millis, true);
+        }
+        READ_UBX_RESULT read_header_body_part_(Stream& stream, NonUbxCallback callback, millisDelay &millis)
+        {
+            return read_same_buffer_(stream, 
+                reinterpret_cast<uint8_t*>(&message),
+                sizeof(UBX_Base),
+                callback, millis, false);
+        }            
+        
+
+        static READ_UBX_RESULT read_same_buffer_(Stream& stream, const uint8_t* buf, 
+            const size_t total_size, 
+            NonUbxCallback callback, 
+            millisDelay &millis,
+            bool continue_on_error)
+        {
+            size_t current_pos = 0;
+            while (!millis.justFinished() 
+                && millis.isRunning() 
+                && current_pos < total_size)
+            {
+                if (!stream.available()) continue;
+                const uint8_t c = static_cast<uint8_t>(stream.read());
+                if (c == buf[current_pos])
+                {
+                    ++current_pos;
+                }
+                else
+                {
+                    if (0 != current_pos && !continue_on_error) return READ_UBX_RESULT::ERROR_MESSAGE;
+                    send_to_callback_(buf, current_pos, callback);
+                    current_pos = 0;
+                    send_to_callback_(&c, 1, callback);
+                }
+            }
+            if (total_size == current_pos) return READ_UBX_RESULT::OK;
+            return READ_UBX_RESULT::ERROR_TIMEOUT;
+        }
+
+        static void send_to_callback_(const uint8_t *buf, size_t size, NonUbxCallback callback)
+        {
+            if (nullptr != callback)
+            {
+                for (size_t i = 0; i < size; ++i)
+                {
+                    callback(buf[i]);
+                }
+            }
+        }
+
 };
 
 enum class POWER_SAVING_MODES : uint8_t
