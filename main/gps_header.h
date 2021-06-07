@@ -17,7 +17,8 @@ enum class GPS_DEVICE_WORK_MODE
     SOFTWARE_OFF, //OFF by command,
     HARDWARE_OFF, //OFF by disable power
     INVALID = 0xFF //for alarm by vibro (see GPSRegimeSettings)
-}
+};
+
 
 //define work regime of gps (not module!)
 enum class GPS_REGIME
@@ -41,7 +42,7 @@ struct GPSSettings
 {
     GPSSettings();
     void Save();
-    GPS_REGIME current_regime{GPS_WORK_MODE::WAIT};
+    GPS_REGIME current_regime{GPS_REGIME::WAIT};
     GPSRegimeSettings wait_settings;
     GPSRegimeSettings track_settings;
     GPSRegimeSettings trail_settings;

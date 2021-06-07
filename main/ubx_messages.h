@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <Stream.h>
-#include "millisDelay.h"
+#include "MillisCallback.h"
 
 struct UBX_Base
 {
@@ -14,17 +14,25 @@ struct UBX_Base
     uint8_t clss;
     uint8_t id;
     uint16_t length;
+
+    //ack message is also nack message. So for correct check
+    //it is neccessary to override this func in ACK message by ACK type
+    bool CheckMessageType(const UBX_Base& msg) const
+    {
+        return clss == msg.clss && id == msg.id;
+    }
 };
 
 enum class READ_UBX_RESULT : uint8_t
 {
     OK = 0,
     ERROR_TIMEOUT = 1,
-    ERROR_MESSAGE, 
+    ERROR_MESSAGE_BY_LENGTH,
+    ERROR_MESSAGE_BY_TYPE, 
     ERROR_CRC
 };
 
-using NonUbxCallback = void(*)(uint8_t readed_char);
+using NonUbxCallback = void(*)(uint8_t c);
 
 template<typename T>
 class UBX_MESSAGE_
@@ -44,28 +52,35 @@ class UBX_MESSAGE_
             }
         }
 
-        READ_UBX_RESULT Read(Stream& stream, NonUbxCallback callback = nullptr, int timeout = 1000)
+        READ_UBX_RESULT Read(Stream& stream, NonUbxCallback callback = nullptr, int timeout = 1000,
+             WaitCallback wait_callback = nullptr)
         {   
-            millisDelay millis;
+            MillisReadDelay millis(stream, wait_callback);
             millis.start(timeout);
-            auto header_result = read_header_(stream, callback, millis);
+            auto header_result = read_header_(callback, millis);
             if (READ_UBX_RESULT::OK != header_result) return header_result;
-            auto body_header_result = read_header_body_part_(stream, callback, millis);
+
+            auto body_header_result = read_header_body_part_(millis);
             if (READ_UBX_RESULT::OK != body_header_result) return body_header_result;
 
-            auto remain_read = sizeof(message) - sizeof(UBX_Base) + 2 * sizeof(uint8_t);
-            auto ptr = reinterpret_cast<uint8_t*>(&message) + sizeof(UBX_Base);
-            while (!millis.justFinished() 
-                && millis.isRunning() 
-                && remain_read > 0)
+            if (sizeof(message) - sizeof(UBX_Base) != message.length)
             {
-                if (!stream.available()) continue;
-                const uint8_t c = static_cast<uint8_t>(stream.read());
-                *ptr = c;
-                ++ptr;
-                --remain_read;
+                empty_read_(message.length, millis);
+                return READ_UBX_RESULT::ERROR_MESSAGE_BY_LENGTH;
             }
-            if (0 != remain_read) return READ_UBX_RESULT::ERROR_TIMEOUT;
+            const T test_msg;
+            if (!test_msg.CheckMessageType(message))
+            {
+                empty_read_(message.length, millis);
+                return READ_UBX_RESULT::ERROR_MESSAGE_BY_TYPE;
+            }
+
+            auto ptr = reinterpret_cast<uint8_t*>(&message) + sizeof(UBX_Base);
+            auto remain_read = message.length + 2 * sizeof(uint8_t);
+            auto message_result = read_to_buffer_(ptr, remain_read, millis);
+
+            if (READ_UBX_RESULT::OK != message_result) return message_result;
+            
             auto read_ck_a = ck_a_;
             auto read_ck_b = ck_b_;
             crc_();
@@ -91,39 +106,59 @@ class UBX_MESSAGE_
             }
         }
 
-        READ_UBX_RESULT read_header_(Stream& stream, NonUbxCallback callback, millisDelay &millis)
+        READ_UBX_RESULT read_header_(NonUbxCallback callback, MillisReadDelay &millis)
         {
-            return read_same_buffer_(stream, header_, sizeof(header_), callback, millis, true);
+            return read_same_buffer_(header_, sizeof(header_), callback, millis);
         }
-        READ_UBX_RESULT read_header_body_part_(Stream& stream, NonUbxCallback callback, millisDelay &millis)
+        READ_UBX_RESULT read_header_body_part_(MillisReadDelay &millis)
         {
-            return read_same_buffer_(stream, 
-                reinterpret_cast<uint8_t*>(&message),
+            return read_to_buffer_(reinterpret_cast<uint8_t*>(&message),
                 sizeof(UBX_Base),
-                callback, millis, false);
+                millis);
         }            
         
+        static READ_UBX_RESULT read_to_buffer_(uint8_t* buf,
+            size_t size_to_write,
+            MillisReadDelay &millis)
+        {
+            int c_out = 0;
+            while (size_to_write > 0
+                && millis.Read(c_out))
+            {
+                *buf = static_cast<uint8_t>(c_out);
+                ++buf;
+                --size_to_write;
+            }
+            return 0 == size_to_write ? READ_UBX_RESULT::OK : READ_UBX_RESULT::ERROR_TIMEOUT;
+        }
 
-        static READ_UBX_RESULT read_same_buffer_(Stream& stream, const uint8_t* buf, 
+        static void empty_read_(size_t size_to_read, MillisReadDelay &millis)
+        {
+            int c_out = 0;
+            while (size_to_read > 0
+                && millis.Read(c_out))
+            {
+                --size_to_read;
+            }
+        }
+
+        static READ_UBX_RESULT read_same_buffer_(const uint8_t* buf, 
             const size_t total_size, 
             NonUbxCallback callback, 
-            millisDelay &millis,
-            bool continue_on_error)
+            MillisReadDelay &millis)
         {
             size_t current_pos = 0;
-            while (!millis.justFinished() 
-                && millis.isRunning() 
-                && current_pos < total_size)
+            int c_out = 0;
+            while (current_pos < total_size
+                && millis.Read(c_out))
             {
-                if (!stream.available()) continue;
-                const uint8_t c = static_cast<uint8_t>(stream.read());
+                uint8_t c = static_cast<uint8_t>(c_out);
                 if (c == buf[current_pos])
                 {
                     ++current_pos;
                 }
                 else
                 {
-                    if (0 != current_pos && !continue_on_error) return READ_UBX_RESULT::ERROR_MESSAGE;
                     send_to_callback_(buf, current_pos, callback);
                     current_pos = 0;
                     send_to_callback_(&c, 1, callback);
@@ -267,7 +302,7 @@ struct UBX_RXM_PMREQ_BASE_ : UBX_Base
         struct
         {
             uint8_t : 1;
-            //go into backmode if true
+            //go into backmode if true (what is back mode?)
             uint8_t backup : 1;
         };
     };
@@ -277,10 +312,48 @@ struct UBX_RXM_PMREQ_BASE_ : UBX_Base
 struct UBX_ACK_BASE_ : UBX_Base
 {
     UBX_ACK_BASE_()
-        : UBX_Base{0x0, 0x0, 0x0}
+        : UBX_Base{0x5, 0x0, 0x0}
     {}
     uint8_t clsID{0};
     uint8_t msgID{0};
+
+    bool CheckMessageType(const UBX_ACK_BASE_& msg) const
+    {
+        //0x0 == NACK, 0x1 == ACK
+        return clss == msg.clss && (id == 0x0 || id == 0x1);
+    }
+};
+
+union UBX_CFG_HELPER
+{
+    uint32_t mask{0};
+    struct
+    {
+        uint32_t ioPort : 1;
+        uint32_t msgConf: 1;
+        uint32_t infMsg : 1;
+        uint32_t navConf : 1;
+        uint32_t rxmConf : 1;
+        uint32_t : 3;
+        uint32_t senConf : 1;
+        uint32_t rinvConf : 1;
+        uint32_t antConf : 1;
+        uint32_t logConf : 1;
+        uint32_t ftsConf : 1;
+    };
+};
+
+//message for resettings, saving and loading config
+struct UBX_CFG_CFG_BASE_ : UBX_Base
+{
+    UBX_CFG_CFG_BASE_()
+        : UBX_Base{0x06, 0x09, 12}
+    {}
+
+    UBX_CFG_HELPER clearMask;
+    UBX_CFG_HELPER saveMask;
+    UBX_CFG_HELPER loadMask;
+    
 };
 
 using UBX_CFG_PM2 = UBX_MESSAGE_<UBX_CFG_PM2_BASE_>;
@@ -289,3 +362,4 @@ using UBX_CFG_REQUEST_RATE = UBX_MESSAGE_<UBX_CFG_REQUEST_RATE_BASE_>;
 using UBX_CFG_RATE = UBX_MESSAGE_<UBX_CFG_RATE_BASE_>;
 using UBX_RXM_PMREQ = UBX_MESSAGE_<UBX_RXM_PMREQ_BASE_>;
 using UBX_ACK = UBX_MESSAGE_<UBX_ACK_BASE_>;
+using UBX_CFG_CFG = UBX_MESSAGE_<UBX_CFG_CFG_BASE_>;

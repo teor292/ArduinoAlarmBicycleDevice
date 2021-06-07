@@ -17,7 +17,7 @@ class MillisReadDelay : public millisDelay
 
         bool Read(int& c_out)
         {
-            while (!justFinished())
+            while (!justFinished() && isRunning())
             {
                 if (!read_stream_.available()) 
                 {
