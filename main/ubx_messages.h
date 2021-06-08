@@ -286,7 +286,7 @@ struct UBX_CFG_RATE_BASE_ : UBX_Base
 
     uint16_t measRate{1000};
     uint16_t navRate{1};
-    TIME_REF timeRef{TIME_REF::UTC_TIME};
+    TIME_REF timeRef{TIME_REF::GPS_TIME};
 };
 
 struct UBX_RXM_PMREQ_BASE_ : UBX_Base

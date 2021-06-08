@@ -18,7 +18,11 @@ class GPSDevice
 
         explicit GPSDevice(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCallback wait_callback);
 
+        void Initialize();
+
         bool SetModeSettings(UBX_CFG_PM2& settings);
+
+        bool SetRate(UBX_CFG_RATE& rate);
 
         bool SetMode(GPS_DEVICE_WORK_MODE mode);
 
@@ -28,9 +32,13 @@ class GPSDevice
         NonUbxCallback non_ubx_callback_;
         WaitCallback wait_callback_;
 
+        bool initialized_{false};
+
+        static const int DEFAULT_TIMEOUT = 1200;
+
         void wait_(MillisReadDelay& millis);
 
-        bool read_ack_(uint8_t clsID, uint8_t msgID);
+        bool read_ack_(uint8_t clsID, uint8_t msgID, int timeout = DEFAULT_TIMEOUT);
 
         bool set_continous_mode_();
         bool set_off_mode_();
@@ -38,30 +46,35 @@ class GPSDevice
 
         bool send_rxm_msg_(LP_MODE mode);
 
+        void wake_up_(int timeout = 500);
+
         template<typename T>
-        bool send_message_(T& message)
+        bool send_message_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
-            MillisReadDelay millis(stream_, wait_callback_);
+            wake_up_();
 
-            //1. wake up
-            stream_.write(0xFF); //send ignoring characted
-            millis.start(500); //wait for 0.5 s
-            wait_(millis);
-
-            //2. Send message && read ACK
-            return send_message_no_wait_(message);
+            //Send message && read ACK
+            return send_message_no_wait_(message, timeout);
         }
 
         template<typename T>
-        bool send_message_no_wait_(T& message)
+        bool send_message_no_wait_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
             //Send message
             message.Send(stream_);
 
             //Read ACK
-            return read_ack_(message.message.clss, message.message.id);
+            return read_ack_(message.message.clss, message.message.id, timeout);
         }
-        
+
+        template<typename T>
+        void send_message_no_ack_(T& message)
+        {
+            wake_up_();
+            
+            //Send message
+            message.Send(stream_);
+        }      
 };
 
 #endif
