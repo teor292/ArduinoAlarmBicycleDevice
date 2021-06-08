@@ -62,6 +62,24 @@ bool GPSDevice::SetMode(GPS_DEVICE_WORK_MODE mode)
     return false;
 }
 
+bool GPSDevice::ResetSettings()
+{
+    Initialize();
+    UBX_CFG_CFG save_cfg;
+    save_cfg.message.clearMask.navConf = 1;
+    save_cfg.message.loadMask.navConf = 1;
+    save_cfg.message.clearMask.rxmConf = 1;
+    save_cfg.message.loadMask.rxmConf = 1;
+    return send_message_(save_cfg);
+}
+
+void GPSDevice::ResetDevice()
+{
+    Initialize();
+    UBX_CFG_RST rst;
+    send_message_no_ack_(rst);
+}
+
 bool GPSDevice::set_continous_mode_()
 {
     return send_rxm_msg_(LP_MODE::CONTINOUS);

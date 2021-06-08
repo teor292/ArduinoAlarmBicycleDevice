@@ -356,6 +356,49 @@ struct UBX_CFG_CFG_BASE_ : UBX_Base
     
 };
 
+enum class RESET_GPS_MODE : uint8_t
+{
+    HARDWARE = 0x0,
+    SOFTWARE = 0x1,
+    SOFTWARE_GNSS = 0x2,
+    HARDWARE_AFTER_SHUTDOWN = 0x4,
+    CONTROLLED_GNSS_STOP = 0x8,
+    CONTROLLED_GNSS_START = 0x9
+};
+
+struct UBX_CFG_RST_BASE_ : UBX_Base
+{
+    UBX_CFG_RST_BASE_()
+        : UBX_Base{0x06, 0x04, 4}
+    {}
+    union
+    {
+        uint16_t navBbrMask{0};
+        struct
+        {
+            uint16_t eph : 1;
+            uint16_t alm : 1;
+            uint16_t health : 1;
+            uint16_t klob : 1;
+            uint16_t pos : 1;
+            uint16_t clkd : 1;
+            uint16_t osc : 1;
+            uint16_t utc : 1;
+            uint16_t rtc : 1;
+            uint16_t : 2;
+            uint16_t sfdr : 1;
+            uint16_t vmon : 1;
+            uint16_t tct : 1;
+            uint16_t : 1;
+            uint16_t aop : 1;
+        };
+    };
+
+    RESET_GPS_MODE resetMode{RESET_GPS_MODE::HARDWARE};
+    uint8_t reserved1{0};
+
+}; 
+
 using UBX_CFG_PM2 = UBX_MESSAGE_<UBX_CFG_PM2_BASE_>;
 using UBX_CFG_RXM = UBX_MESSAGE_<UBX_CFG_RXM_BASE_>;
 using UBX_CFG_REQUEST_RATE = UBX_MESSAGE_<UBX_CFG_REQUEST_RATE_BASE_>;
@@ -363,3 +406,4 @@ using UBX_CFG_RATE = UBX_MESSAGE_<UBX_CFG_RATE_BASE_>;
 using UBX_RXM_PMREQ = UBX_MESSAGE_<UBX_RXM_PMREQ_BASE_>;
 using UBX_ACK = UBX_MESSAGE_<UBX_ACK_BASE_>;
 using UBX_CFG_CFG = UBX_MESSAGE_<UBX_CFG_CFG_BASE_>;
+using UBX_CFG_RST = UBX_MESSAGE_<UBX_CFG_RST_BASE_>;

@@ -26,6 +26,10 @@ class GPSDevice
 
         bool SetMode(GPS_DEVICE_WORK_MODE mode);
 
+        bool ResetSettings();
+
+        void ResetDevice();
+
 
     protected:
         Stream& stream_;
