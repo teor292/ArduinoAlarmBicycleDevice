@@ -28,14 +28,36 @@ enum class GPS_REGIME
     TRAIL, //CONTINOUS/PSMCT/PSMOO modes, writing gps data on big time interval (1 - 1440 (60 * 24) minutes)
 };
 
+struct GPSModeSettings
+{
+     //seconds for CONTINOUS/PSMCT, minutes for PSMOO
+     //this is time for get gps data by current software
+    int time_update{1};
+    //gps fix by module in seconds
+    int time_fix{1}; 
+};
+
+struct GPSAllModeSettings
+{
+    GPSModeSettings continous_mode_settings;
+    GPSModeSettings psmct_mode_settings;
+    GPSModeSettings psmoo_mode_settings;
+};
+
 struct GPSRegimeSettings
 {
-    GPS_DEVICE_WORK_MODE mode;
-    int time_update; //seconds for PSMCT, minutes for PSMOO
+    GPS_DEVICE_WORK_MODE mode{GPS_DEVICE_WORK_MODE::CONTINOUS};
 
     //gps mode if vibro alarm is present
     //can't be worse by performance than current
-    GPS_DEVICE_WORK_MODE mode_on_alarm; 
+    GPS_DEVICE_WORK_MODE mode_on_alarm{GPS_DEVICE_WORK_MODE::INVALID}; 
+};
+
+struct GPSAllRegimesSettings
+{
+    GPSRegimeSettings wait_settings;
+    GPSRegimeSettings track_settings;
+    GPSRegimeSettings trail_settings;
 };
 
 struct GPSSettings
@@ -43,9 +65,8 @@ struct GPSSettings
     GPSSettings();
     void Save();
     GPS_REGIME current_regime{GPS_REGIME::WAIT};
-    GPSRegimeSettings wait_settings;
-    GPSRegimeSettings track_settings;
-    GPSRegimeSettings trail_settings;
+    GPSAllModeSettings regimes_settings;
+    GPSAllModeSettings modes_settings;
 };
 
 #endif

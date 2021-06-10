@@ -2,6 +2,7 @@
 
 #if defined(GPS)
 
+#define GPS_WAKE_TIME 5000
 
 #include "header.h"
 
@@ -16,28 +17,34 @@ void GPSDevice::Initialize()
     if (initialized_) return;
     //don't know state of gps modele. So, think it is SLEEP,
     //need wake up and wait
-    wake_up_(5000);
+    wake_up_(GPS_WAKE_TIME);
+    is_sleep_mode_ = GPS_OK(set_mode_(GPS_DEVICE_WORK_MODE::CONTINOUS));
     initialized_ = true;
 }
 
-bool GPSDevice::SetModeSettings(UBX_CFG_PM2& settings)
+GPS_ERROR_CODES GPSDevice::SetModeSettings(UBX_CFG_PM2& settings)
 {
     Initialize();
     //1. Send message by default alg
-    if (!send_message_(settings)) return false;
+    auto result = send_message_(settings);
+    //currently do not save config:
+    //for every new mode settings of mode must be set previously
+    return result;
+    //if (GPS_ERROR_CODES::OK != result) return result;
     
     //2. Write save settings message
-    UBX_CFG_CFG save_cfg;
-    save_cfg.message.saveMask.rxmConf = 1;
-    return send_message_no_wait_(save_cfg);
+    //UBX_CFG_CFG save_cfg;
+   // save_cfg.message.saveMask.rxmConf = 1;
+    //return send_message_no_wait_(save_cfg);
 }
 
-bool GPSDevice::SetRate(UBX_CFG_RATE& rate)
+GPS_ERROR_CODES GPSDevice::SetRate(UBX_CFG_RATE& rate)
 {
     Initialize();
 
     //1. Send message by default alg
-    if (!send_message_(rate)) return false;
+    auto result = send_message_(rate);
+    if (!GPS_OK(result)) return result;
     
     //2. Write save settings message
     UBX_CFG_CFG save_cfg;
@@ -45,10 +52,15 @@ bool GPSDevice::SetRate(UBX_CFG_RATE& rate)
     return send_message_no_wait_(save_cfg);
 }
 
-bool GPSDevice::SetMode(GPS_DEVICE_WORK_MODE mode)
+GPS_ERROR_CODES GPSDevice::SetMode(GPS_DEVICE_WORK_MODE mode)
 {
     Initialize();
 
+    return set_mode_(mode);
+}
+
+GPS_ERROR_CODES GPSDevice::set_mode_(GPS_DEVICE_WORK_MODE mode)
+{
     switch (mode)
     {
     case GPS_DEVICE_WORK_MODE::CONTINOUS:
@@ -59,10 +71,10 @@ bool GPSDevice::SetMode(GPS_DEVICE_WORK_MODE mode)
     case GPS_DEVICE_WORK_MODE::SOFTWARE_OFF:
         return set_off_mode_();
     }
-    return false;
+    return GPS_ERROR_CODES::NOT_SUPPORTED;
 }
 
-bool GPSDevice::ResetSettings()
+GPS_ERROR_CODES GPSDevice::ResetSettings()
 {
     Initialize();
     UBX_CFG_CFG save_cfg;
@@ -78,29 +90,41 @@ void GPSDevice::ResetDevice()
     Initialize();
     UBX_CFG_RST rst;
     send_message_no_ack_(rst);
+    millisDelay del;
+    del.start(GPS_WAKE_TIME);
+    wait_(del);
 }
 
-bool GPSDevice::set_continous_mode_()
+GPS_ERROR_CODES GPSDevice::set_continous_mode_()
 {
-    return send_rxm_msg_(LP_MODE::CONTINOUS);
+    auto result = send_rxm_msg_(LP_MODE::CONTINOUS);
+    //only if ok set is_sleep_mode_ to true
+    is_sleep_mode_ = GPS_OK(result);
+    return result;
 }
 
-bool GPSDevice::set_ps_mode_()
+GPS_ERROR_CODES GPSDevice::set_ps_mode_()
 {
+    //don't check result. 
+    //If failed and set is_sleep_mode_ to true then everything will be ok,
+    //but additional delay 500 ms
+    is_sleep_mode_ = true;
     return send_rxm_msg_(LP_MODE::POWER_SAVING);
 }
 
-bool GPSDevice::set_off_mode_()
+GPS_ERROR_CODES GPSDevice::set_off_mode_()
 {
     UBX_RXM_PMREQ pmreq;
     pmreq.message.backup = 1;
     send_message_no_ack_(pmreq);
+    is_sleep_mode_ = true;
     initialized_ = false;
-    return true;
+    return GPS_ERROR_CODES::OK;
 }
 
 void GPSDevice::wake_up_(int timeout)
 {
+    if (!is_sleep_mode_) return;
     MillisReadDelay millis(stream_, wait_callback_);
 
     stream_.write(0xFF); //send ignoring characted
@@ -110,14 +134,14 @@ void GPSDevice::wake_up_(int timeout)
 
 
 
-bool GPSDevice::send_rxm_msg_(LP_MODE mode)
+GPS_ERROR_CODES GPSDevice::send_rxm_msg_(LP_MODE mode)
 {
     UBX_CFG_RXM rxm;
     rxm.message.lpMode = mode;
     return send_message_(rxm, 2500);
 }
 
-bool GPSDevice::read_ack_(uint8_t clsID, uint8_t msgID, int timeout)
+GPS_ERROR_CODES GPSDevice::read_ack_(uint8_t clsID, uint8_t msgID, int timeout)
 {
     UBX_ACK ack;
     auto result = ack.Read(stream_, non_ubx_callback_, timeout, wait_callback_);
@@ -125,12 +149,12 @@ bool GPSDevice::read_ack_(uint8_t clsID, uint8_t msgID, int timeout)
     {
         PRINT("ACK failed: ");
         PRINTLN((int)result);
-        return false;
+        return static_cast<GPS_ERROR_CODES>(result);
     }
     if (0 == ack.message.id)
     {
       PRINTLN("ack.message.id 0");
-      return false;
+      return GPS_ERROR_CODES::UBX_NACK_MESSAGE;
     }
 
     if (ack.message.clsID != clsID
@@ -141,13 +165,13 @@ bool GPSDevice::read_ack_(uint8_t clsID, uint8_t msgID, int timeout)
         PRINTLN(clsID);
         PRINTLN(ack.message.id);
         PRINTLN(msgID);
-        return false;
+        return GPS_ERROR_CODES::UBX_OTHER_MESSAGE;
     }
 
-    return true;
+    return GPS_ERROR_CODES::OK;
 }
 
-void GPSDevice::wait_(MillisReadDelay& millis)
+void GPSDevice::wait_(millisDelay& millis)
 {
     while (!millis.justFinished())
     {

@@ -7,6 +7,7 @@
 
 #include "ubx_messages.h"
 #include "MillisCallback.h"
+#include "gps_error_header.h"
 
 
 //class that response for set gps module settings and state
@@ -20,13 +21,13 @@ class GPSDevice
 
         void Initialize();
 
-        bool SetModeSettings(UBX_CFG_PM2& settings);
+        GPS_ERROR_CODES SetModeSettings(UBX_CFG_PM2& settings);
 
-        bool SetRate(UBX_CFG_RATE& rate);
+        GPS_ERROR_CODES SetRate(UBX_CFG_RATE& rate);
 
-        bool SetMode(GPS_DEVICE_WORK_MODE mode);
+        GPS_ERROR_CODES SetMode(GPS_DEVICE_WORK_MODE mode);
 
-        bool ResetSettings();
+        GPS_ERROR_CODES ResetSettings();
 
         void ResetDevice();
 
@@ -37,23 +38,26 @@ class GPSDevice
         WaitCallback wait_callback_;
 
         bool initialized_{false};
+        bool is_sleep_mode_{true};
 
         static const int DEFAULT_TIMEOUT = 1200;
 
-        void wait_(MillisReadDelay& millis);
+        void wait_(millisDelay& millis);
 
-        bool read_ack_(uint8_t clsID, uint8_t msgID, int timeout = DEFAULT_TIMEOUT);
+        GPS_ERROR_CODES read_ack_(uint8_t clsID, uint8_t msgID, int timeout = DEFAULT_TIMEOUT);
 
-        bool set_continous_mode_();
-        bool set_off_mode_();
-        bool set_ps_mode_();
+        GPS_ERROR_CODES set_continous_mode_();
+        GPS_ERROR_CODES set_off_mode_();
+        GPS_ERROR_CODES set_ps_mode_();
 
-        bool send_rxm_msg_(LP_MODE mode);
+        GPS_ERROR_CODES send_rxm_msg_(LP_MODE mode);
 
         void wake_up_(int timeout = 500);
 
+        GPS_ERROR_CODES set_mode_(GPS_DEVICE_WORK_MODE mode);
+
         template<typename T>
-        bool send_message_(T& message, int timeout = DEFAULT_TIMEOUT)
+        GPS_ERROR_CODES send_message_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
             wake_up_();
 
@@ -62,7 +66,7 @@ class GPSDevice
         }
 
         template<typename T>
-        bool send_message_no_wait_(T& message, int timeout = DEFAULT_TIMEOUT)
+        GPS_ERROR_CODES send_message_no_wait_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
             //Send message
             message.Send(stream_);
