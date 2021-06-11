@@ -16,6 +16,21 @@ void GPSAutoStater::Initialize(const GPSAllModeSettings& modes_settings)
     initialized_ = true;
 }
 
+GPS_ERROR_CODES GPSAutoStater::SetModesSettings(const GPSAllModeSettings& modes_settings)
+{
+    auto mode = current_settings_.mode;
+    if (is_in_alarm_ && GPS_DEVICE_WORK_MODE::INVALID != current_settings_.mode_on_alarm)
+    {
+        mode = current_settings_.mode_on_alarm;
+    }
+
+    bool update = !check_equals_(mode, modes_settings);
+    modes_settings_ = modes_settings;
+    if (!update) return GPS_ERROR_CODES::OK;
+
+    return set_mode_device_(mode);
+}
+
 GPS_ERROR_CODES GPSAutoStater::SetCurrentRegime(GPSRegimeSettings& settings)
 {
     if (!initialized_) return GPS_ERROR_CODES::NOT_INITIALIZED;
@@ -28,7 +43,12 @@ GPS_ERROR_CODES GPSAutoStater::SetCurrentRegime(GPSRegimeSettings& settings)
         current_settings_ = settings;
         if (update)
         {
-            return set_current_mode_settings_();
+            auto mode = current_settings_.mode_on_alarm;
+            if (GPS_DEVICE_WORK_MODE::INVALID == mode)
+            {
+                mode = current_settings_.mode;
+            }
+            return set_mode_device_(mode);
         }
         return GPS_ERROR_CODES::OK;
     }
@@ -86,6 +106,7 @@ void GPSAutoStater::Work(bool alarm)
 GPS_ERROR_CODES GPSAutoStater::set_current_mode_settings_()
 {
     GPS_DEVICE_WORK_MODE mode = is_in_alarm_ ? current_settings_.mode_on_alarm : current_settings_.mode;
+    if (GPS_DEVICE_WORK_MODE::INVALID == mode) return GPS_ERROR_CODES::OK;
     return set_mode_device_(mode);
 }
 
@@ -157,8 +178,24 @@ GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_()
 void GPSAutoStater::check_alarm_settings_(GPSRegimeSettings& settings)
 {
     if (GPS_DEVICE_WORK_MODE::CONTINOUS != settings.mode_on_alarm
-         && GPS_DEVICE_WORK_MODE::PSMCT != settings.mode_on_alarm)
+         && GPS_DEVICE_WORK_MODE::PSMCT != settings.mode_on_alarm
+         && GPS_DEVICE_WORK_MODE::INVALID != settings.mode_on_alarm)
     {
         settings.mode_on_alarm = GPS_DEVICE_WORK_MODE::CONTINOUS;
     }
+}
+
+
+bool GPSAutoStater::check_equals_(GPS_DEVICE_WORK_MODE mode, const GPSAllModeSettings& settings) const
+{
+    switch (mode)
+    {
+    case GPS_DEVICE_WORK_MODE::CONTINOUS:
+        return modes_settings_.continous_mode_settings.DeviceEquals(settings.continous_mode_settings);
+    case GPS_DEVICE_WORK_MODE::PSMCT:
+        return modes_settings_.psmct_mode_settings.DeviceEquals(settings.psmct_mode_settings);
+    case GPS_DEVICE_WORK_MODE::PSMOO:
+        return modes_settings_.psmoo_mode_settings.DeviceEquals(settings.psmoo_mode_settings);
+    }
+    return true;
 }

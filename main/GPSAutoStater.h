@@ -41,6 +41,8 @@ class GPSAutoStater
         GPS_ERROR_CODES set_off_mode_();
 
         void check_alarm_settings_(GPSRegimeSettings& settings);
+
+        bool check_equals_(GPS_DEVICE_WORK_MODE mode, const GPSAllModeSettings& settings) const;
         
 };
 

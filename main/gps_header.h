@@ -35,6 +35,17 @@ struct GPSModeSettings
     int time_update{1};
     //gps fix by module in seconds
     int time_fix{1}; 
+
+    bool operator == (const GPSModeSettings& settings) const
+    {
+        return time_update == settings.time_update 
+            && time_fix == settings.time_fix;
+    }
+
+    bool DeviceEquals(const GPSModeSettings& settings) const
+    {
+        return time_fix == settings.time_fix;
+    }
 };
 
 struct GPSAllModeSettings
