@@ -18,6 +18,7 @@ void GPSAutoStater::Initialize(const GPSAllModeSettings& modes_settings)
 
 GPS_ERROR_CODES GPSAutoStater::SetModesSettings(const GPSAllModeSettings& modes_settings)
 {
+    if (!initialized_) return GPS_ERROR_CODES::NOT_INITIALIZED;
     auto mode = current_settings_.mode;
     if (is_in_alarm_ && GPS_DEVICE_WORK_MODE::INVALID != current_settings_.mode_on_alarm)
     {

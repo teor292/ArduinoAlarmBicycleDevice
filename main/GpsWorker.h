@@ -1,8 +1,10 @@
 #pragma once
 
+#include "gps_header.h"
+
 #if defined(GPS)
 
-#include "gps_header.h"
+
 #include "TinyGps++.h"
 #include <Stream.h>
 #include "header.h"
@@ -11,32 +13,21 @@ class GpsWorker
 {
     public:
 
-        explicit GpsWorker(Stream& stream);
+        explicit GpsWorker(Stream& gps_stream);
 
-        void ReadFromStreamIfAvailable();
+        void Read();
+
+        void Read(uint8_t c);
 
         void Work();
 
-        void GetLocationString(const char* phone, SafeString& buffer);
+        void PerformCommand();
 
-        TinyGPSPlus& Gps() const
-        {
-            return gps_;
-        }
 
     protected:
 
-        enum class CURRENT_STATE
-        {
-            NONE,
-            WAIT_FOR_GPS
-        };
-
-        Stream& stream_;
-        GPSSettings settings_;
+        Stream& gps_stream_;
         TinyGPSPlus gps_;
-        CURRENT_STATE state_{CURRENT_STATE::NONE};
-        char last_phone_[PHONE_BUF_LENGTH];
 
 };
 

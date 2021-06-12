@@ -15,8 +15,9 @@ GPSDevice::GPSDevice(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCa
 void GPSDevice::Initialize()
 {
     if (initialized_) return;
-    //don't know state of gps modele. So, think it is SLEEP,
+    //don't know state of gps module. So, think it is in SLEEP,
     //need wake up and wait
+    is_sleep_mode_ = true;
     wake_up_(GPS_WAKE_TIME);
     is_sleep_mode_ = GPS_OK(set_mode_(GPS_DEVICE_WORK_MODE::CONTINOUS));
     initialized_ = true;
