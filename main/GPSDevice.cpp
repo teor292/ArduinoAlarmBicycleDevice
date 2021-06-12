@@ -45,12 +45,13 @@ GPS_ERROR_CODES GPSDevice::SetRate(UBX_CFG_RATE& rate)
 
     //1. Send message by default alg
     auto result = send_message_(rate);
-    if (!GPS_OK(result)) return result;
+    //if (!GPS_OK(result)) return result;
+    return result;
     
     //2. Write save settings message
-    UBX_CFG_CFG save_cfg;
-    save_cfg.message.saveMask.navConf = 1;
-    return send_message_no_wait_(save_cfg);
+    //UBX_CFG_CFG save_cfg;
+    //save_cfg.message.saveMask.navConf = 1;
+    //return send_message_no_wait_(save_cfg);
 }
 
 GPS_ERROR_CODES GPSDevice::SetMode(GPS_DEVICE_WORK_MODE mode)
@@ -83,7 +84,13 @@ GPS_ERROR_CODES GPSDevice::ResetSettings()
     save_cfg.message.loadMask.navConf = 1;
     save_cfg.message.clearMask.rxmConf = 1;
     save_cfg.message.loadMask.rxmConf = 1;
-    return send_message_(save_cfg);
+    //device will be in continous mode after this
+    auto result = send_message_(save_cfg);
+    if (!GPS_OK(result)) return result;
+
+    is_sleep_mode_ = false;
+
+    return result;
 }
 
 void GPSDevice::ResetDevice()
@@ -94,6 +101,9 @@ void GPSDevice::ResetDevice()
     millisDelay del;
     del.start(GPS_WAKE_TIME);
     wait_(del);
+
+    //due to not save settings -> device must be in continous mode
+    is_sleep_mode_ = false;
 }
 
 GPS_ERROR_CODES GPSDevice::set_continous_mode_()

@@ -109,7 +109,7 @@ void do_get_gps();
 void wait_callback()
 {
   #if defined(GPS)
-  gpser.ReadFromStreamIfAvailable();
+  
   #endif
 }
 
@@ -557,11 +557,7 @@ void loop()
 
 void do_get_gps()
 {
-  auto gps = gpser.Gps();
-  if (gps.location.isValid())
-  {
 
-  }
 }
 
 #endif

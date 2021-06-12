@@ -2,28 +2,36 @@
 
 #include <Arduino.h>
 
-#define MIN_ALARM_TIME 120000
+#define FORCE_POS 0
+#define ALARM_POS 1
+#define DEFAULT_POS 2
 
 GPSAutoStater::GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCallback wait_callback)
     : device_(gps_stream, non_ubx_callback, wait_callback)
 {
+    //add states by priority
+    //force state (by command -> get gps)
+    states_.push_back(std::shared_ptr<GPSDeviceBaseState>(new GPSDeviceState(GPS_DEVICE_WORK_MODE::CONTINOUS, 300000UL)));
+    //alarm state (by vibro)
+    states_.push_back(std::shared_ptr<GPSDeviceBaseState>(new GPSDeviceState(GPS_DEVICE_WORK_MODE::CONTINOUS, 120000UL)));
+    //default states
+    states_.push_back(std::shared_ptr<GPSDeviceBaseState>(new GPSDeviceBaseState(GPS_DEVICE_WORK_MODE::CONTINOUS)));
 }
 
 void GPSAutoStater::Initialize(const GPSAllModeSettings& modes_settings)
 {
+    //device go to continous mode
     device_.Initialize();
     modes_settings_ = modes_settings;
+    //set rate fix
+    set_rate_(modes_settings_.continous_mode_settings.time_fix * 1000);
     initialized_ = true;
 }
 
 GPS_ERROR_CODES GPSAutoStater::SetModesSettings(const GPSAllModeSettings& modes_settings)
 {
     if (!initialized_) return GPS_ERROR_CODES::NOT_INITIALIZED;
-    auto mode = current_settings_.mode;
-    if (is_in_alarm_ && GPS_DEVICE_WORK_MODE::INVALID != current_settings_.mode_on_alarm)
-    {
-        mode = current_settings_.mode_on_alarm;
-    }
+    auto mode = get_current_mode_();
 
     bool update = !check_equals_(mode, modes_settings);
     modes_settings_ = modes_settings;
@@ -36,32 +44,19 @@ GPS_ERROR_CODES GPSAutoStater::SetCurrentRegime(GPSRegimeSettings& settings)
 {
     if (!initialized_) return GPS_ERROR_CODES::NOT_INITIALIZED;
 
-    check_alarm_settings_(settings);
+    check_settings_(settings);
 
-    if (is_in_alarm_)
-    {
-        bool update = current_settings_.mode_on_alarm != settings.mode_on_alarm;
-        current_settings_ = settings;
-        if (update)
-        {
-            auto mode = current_settings_.mode_on_alarm;
-            if (GPS_DEVICE_WORK_MODE::INVALID == mode)
-            {
-                mode = current_settings_.mode;
-            }
-            return set_mode_device_(mode);
-        }
-        return GPS_ERROR_CODES::OK;
-    }
-
-    bool update = settings.mode != current_settings_.mode;
-
+    const auto current_mode = get_current_mode_();
     current_settings_ = settings;
+    states_[ALARM_POS]->SetMode(settings.mode_on_alarm);
+    states_[DEFAULT_POS]->SetMode(settings.mode);
+    const auto new_mode = get_current_mode_();
 
-    if (update)
+    if (current_mode != new_mode)
     {
-        return set_current_mode_settings_();
+        return set_mode_device_(new_mode);
     }
+
     return GPS_ERROR_CODES::OK;
 }
 
@@ -73,42 +68,29 @@ GPSRegimeSettings GPSAutoStater::GetCurrentRegime()
 
 GPS_ERROR_CODES GPSAutoStater::ResetSettings()
 {
-    return device_.ResetSettings();
+    auto result = device_.ResetSettings();
+    if (!GPS_OK(result)) return result;
+
+    reset_stater_settings_();
+    return result;
 }
 
 void GPSAutoStater::ResetDevice()
 {
-    return device_.ResetDevice();
+    device_.ResetDevice();
+
+    reset_stater_settings_();
 }
 
 void GPSAutoStater::Work(bool alarm)
 {
-    if (alarm)
-    {
-        last_alarm_time_ = millis();
-        if (!is_in_alarm_)
-        {
-            is_in_alarm_ = true;
-            set_current_mode_settings_();
-        }
-    } else
-    {
-        if (is_in_alarm_)
-        {
-            auto current_time = millis();
-            if (current_time - last_alarm_time_ < MIN_ALARM_TIME) return;
-            is_in_alarm_ = false;
-            set_current_mode_settings_();
-        }
-    }
-}
+    auto current_mode = get_current_mode_();
+    states_[ALARM_POS]->Active(alarm);
+    auto new_mode = get_current_mode_();
+    if (new_mode == current_mode) return;
 
+    set_mode_device_(new_mode);
 
-GPS_ERROR_CODES GPSAutoStater::set_current_mode_settings_()
-{
-    GPS_DEVICE_WORK_MODE mode = is_in_alarm_ ? current_settings_.mode_on_alarm : current_settings_.mode;
-    if (GPS_DEVICE_WORK_MODE::INVALID == mode) return GPS_ERROR_CODES::OK;
-    return set_mode_device_(mode);
 }
 
 GPS_ERROR_CODES GPSAutoStater::set_mode_device_(GPS_DEVICE_WORK_MODE mode)
@@ -132,12 +114,19 @@ GPS_ERROR_CODES GPSAutoStater::set_continous_mode_()
     auto result = device_.SetMode(GPS_DEVICE_WORK_MODE::CONTINOUS);
     if (!GPS_OK(result)) return result;
 
+    return set_rate_(modes_settings_.continous_mode_settings.time_fix * 1000);
+}
+
+GPS_ERROR_CODES GPSAutoStater::set_rate_(uint16_t time)
+{
+    if (current_rate_time_ == time) return GPS_ERROR_CODES::OK;
     UBX_CFG_RATE rate;
-    rate.message.measRate = modes_settings_.continous_mode_settings.time_fix * 1000;
-    if (rate.message.measRate < 500 || rate.message.measRate > 10000)
+    rate.message.measRate = time;
+    if (rate.message.measRate < 1000 || rate.message.measRate > 10000)
     {
         rate.message.measRate = 1000;
     }
+    current_rate_time_ = rate.message.measRate;
     return device_.SetRate(rate);
 }
 
@@ -151,6 +140,9 @@ GPS_ERROR_CODES GPSAutoStater::set_psmct_mode_()
         conf.message.updatePeriod = 5000;
     }
     auto result = device_.SetModeSettings(conf);
+    if (!GPS_OK(result)) return result;
+
+    result = set_rate_(modes_settings_.psmct_mode_settings.time_fix * 1000);
     if (!GPS_OK(result)) return result;
 
     return device_.SetMode(GPS_DEVICE_WORK_MODE::PSMCT);
@@ -176,13 +168,17 @@ GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_()
      return device_.SetMode(GPS_DEVICE_WORK_MODE::SOFTWARE_OFF);
  }
 
-void GPSAutoStater::check_alarm_settings_(GPSRegimeSettings& settings)
+void GPSAutoStater::check_settings_(GPSRegimeSettings& settings)
 {
     if (GPS_DEVICE_WORK_MODE::CONTINOUS != settings.mode_on_alarm
          && GPS_DEVICE_WORK_MODE::PSMCT != settings.mode_on_alarm
          && GPS_DEVICE_WORK_MODE::INVALID != settings.mode_on_alarm)
     {
         settings.mode_on_alarm = GPS_DEVICE_WORK_MODE::CONTINOUS;
+    }
+    if (GPS_DEVICE_WORK_MODE::INVALID == settings.mode)
+    {
+        settings.mode = GPS_DEVICE_WORK_MODE::CONTINOUS;
     }
 }
 
@@ -199,4 +195,35 @@ bool GPSAutoStater::check_equals_(GPS_DEVICE_WORK_MODE mode, const GPSAllModeSet
         return modes_settings_.psmoo_mode_settings.DeviceEquals(settings.psmoo_mode_settings);
     }
     return true;
+}
+
+GPS_DEVICE_WORK_MODE GPSAutoStater::get_current_mode_() const
+{
+    GPS_DEVICE_WORK_MODE current_mode = GPS_DEVICE_WORK_MODE::INVALID;
+    for (auto& st : states_)
+    {
+        if (st->IsActive())
+        {
+            current_mode = st->GetMode();
+            if (GPS_DEVICE_WORK_MODE::INVALID == current_mode) continue;
+            break;
+        }
+    }
+    if (GPS_DEVICE_WORK_MODE::INVALID == current_mode)
+    {
+        current_mode = states_[DEFAULT_POS]->GetMode();
+    }
+    return current_mode;
+}
+
+void GPSAutoStater::reset_stater_settings_()
+{
+    current_settings_ = GPSRegimeSettings();
+    modes_settings_ = GPSAllModeSettings();
+    current_rate_time_ = 1000;
+
+    for (auto& s : states_)
+    {
+        s->ForceResetActive();
+    }
 }

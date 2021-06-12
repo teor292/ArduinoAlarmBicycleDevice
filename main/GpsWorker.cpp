@@ -2,39 +2,19 @@
 
 #if defined(GPS)
 
-GPSSettings::GpsSettings()
-{
-    //TODO load from EEPROM
-}
-
-void GPSSettings::Save()
-{
-    //TODO save to EEPROM
-}
-
 GpsWorker::GpsWorker(Stream& stream)
-    : stream_(stream)
+    : gps_stream_(stream)
 {
 
 }
 
-void GpsWorker::ReadFromStreamIfAvailable()
+void GpsWorker::Read()
 {
-    while (stream.available())
+    while (gps_stream_.available())
     {
-        gps_.encode((char)stream.read());
+        gps_.encode((char)gps_stream_.read());
     }
 }
 
-void GpsWorker::Work()
-{
-    ReadFromStreamIfAvailable();
-    //TODO
-}
-
-void GpsWorker::GetLocationString(const char* phone, SafeString& buffer)
-{
-    
-}
 
 #endif
