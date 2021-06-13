@@ -64,4 +64,14 @@ void GPSDeviceState::SetDuration(uint32_t duration)
     duration_ = duration;
 }
 
+
+
+void GPSDeviceStateForce::Active(bool active)
+{
+    if (!active) return;
+    if (IsActive()) return;
+    last_alarm_time_ = millis();
+}
+
+
 #endif

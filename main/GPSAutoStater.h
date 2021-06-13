@@ -55,7 +55,7 @@ class GPSAutoStater
         static GPSDeviceStateSettings get_device_states_settings_(const GPSFixSettings& settings);
         static GPSDeviceStateSettings get_device_states_settings_(const GPSAlarmSettings& settings);
 
-        static GPSDeviceState* default_force_();
+        static GPSDeviceStateForce* default_force_();
         static GPSDeviceState* default_alarm_();
         static GPSDeviceBaseState* default_standart_();
         

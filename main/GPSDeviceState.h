@@ -115,4 +115,12 @@ class GPSDeviceState : public GPSDeviceBaseState
         uint32_t last_alarm_time_{0};
 };
 
+class GPSDeviceStateForce : public GPSDeviceState
+{
+    public:
+        using GPSDeviceState::GPSDeviceState;   
+
+        void Active(bool active) override;
+};
+
 #endif

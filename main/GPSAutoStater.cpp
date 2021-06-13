@@ -24,9 +24,9 @@ GPSAutoStater::GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback
         std::shared_ptr<GPSDeviceBaseState>(default_alarm_()));
 }
 
-GPSDeviceState* GPSAutoStater::default_force_()
+GPSDeviceStateForce* GPSAutoStater::default_force_()
 {
-    return new GPSDeviceState(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::CONTINOUS), 600000UL);
+    return new GPSDeviceStateForce(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::CONTINOUS), 600000UL);
 }
 GPSDeviceState* GPSAutoStater::default_alarm_()
 {
@@ -96,7 +96,26 @@ void GPSAutoStater::Work(bool alarm)
     if (new_mode == current_mode) return;
 
     set_mode_device_(new_mode);
+}
 
+void GPSAutoStater::Force()
+{
+    auto current_mode = get_current_mode_();
+    states_[FORCE_POS]->Active(true);
+    auto new_mode = get_current_mode_();
+    if (new_mode == current_mode) return;
+
+    set_mode_device_(new_mode);
+}
+
+void GPSAutoStater::ResetForce()
+{
+    auto current_mode = get_current_mode_();
+    states_[FORCE_POS]->ForceResetActive();
+    auto new_mode = get_current_mode_();
+    if (new_mode == current_mode) return;
+
+    set_mode_device_(new_mode);
 }
 
 GPS_ERROR_CODES GPSAutoStater::set_mode_device_(const GPSDeviceStateSettings& mode)
