@@ -8,76 +8,78 @@
 
 #if defined(GPS)
 
+#include <stdint.h>
+
 //define work mode of gps module
 enum class GPS_DEVICE_WORK_MODE
 {
-    CONTINOUS, //default, no energy saving
+    CONTINOUS = 0, //default, no energy saving
     PSMCT, //short update period (< 10 seconds)
     PSMOO, //long update (> 10 second)
-    SOFTWARE_OFF, //OFF by command,
-    HARDWARE_OFF, //OFF by disable power
-    INVALID = 0xFF //for alarm by vibro (see GPSRegimeSettings)
+    OFF, //OFF by command || power,
+    LAST = OFF //service variable
 };
 
-
-//define work regime of gps (not module!)
-enum class GPS_REGIME
+struct GPSFixSettings
 {
-    WAIT, //device is wait. GPS module can be in all GPS_DEVICE_WORK_MODE state
-    TRACK, //CONTINOUS or PSMCT mode with writing gps data on low time interval (5 - 50 s)
-    TRAIL, //CONTINOUS/PSMCT/PSMOO modes, writing gps data on big time interval (1 - 1440 (60 * 24) minutes)
+    //fix gps coordinate interval, in seconds
+    //0 - disabled (OFF mode)
+    //1 - 9 CONTINOUS mode (rate 1 - 9)
+    //10 - 59 - PSMCT (ack rate 5, update 5, doNotEnterOff flag enable)
+    //60 - 299 - PSMOO (ack rate 5, doNotEnterOff flag enable)
+    //300 - 599 - PSMOO (ack rate 5, searchPeriod 5 minutes)
+    //600s - 59 min - PSMOO (ack rate 5, searchPeriod 10 minutes)
+    //60 min - 24 h - manual (awake after time in CONTINOUS for 10 minutes,
+    //if not found -> sleep: 
+    // >=240 min = 2 h
+    // >= 120 min = 1 h
+    // >= 60 min = 30 min)
+    uint32_t update_time{0}; 
 };
 
-struct GPSModeSettings
+enum class GPS_ALARM_MODE
 {
-     //seconds for CONTINOUS/PSMCT, minutes for PSMOO
-     //this is time for get gps data by current software
-    int time_update{1};
-    //gps fix by module in seconds
-    int time_fix{1}; 
+    OFF = 0, //disabled change state on alarm
+    ON = 1, //enabled in PSCMT, update - 5 seconds, doNotEnterOff flag enable
+    //if already in PSMCT with doNotEnterOff flag enabled || continous mode -> do nothing
+    MAX = 2 //enabled in continous mode, rate 5
+    //if already in continous with rate 1-5 -> do nothing
+};
 
-    bool operator == (const GPSModeSettings& settings) const
+//settings how to work gps if was alarm
+struct GPSAlarmSettings
+{
+    GPS_ALARM_MODE mode{GPS_ALARM_MODE::OFF};
+    //duration of 'mode' after last alarm, default - 3 min
+    uint8_t duration{3};
+
+    uint32_t GetDurationMs() const
     {
-        return time_update == settings.time_update 
-            && time_fix == settings.time_fix;
+        return 60UL * 1000UL * duration;
     }
 
-    bool DeviceEquals(const GPSModeSettings& settings) const
+    void Check()
     {
-        return time_fix == settings.time_fix;
+        if (0 == duration || duration > 60)
+        {
+            duration = 3;
+        }
     }
 };
 
-struct GPSAllModeSettings
+//convience struct for settings
+struct GPSStateSettings
 {
-    GPSModeSettings continous_mode_settings;
-    GPSModeSettings psmct_mode_settings;
-    GPSModeSettings psmoo_mode_settings;
+    GPSFixSettings fix_settings;
+    GPSAlarmSettings alarm_settings;
 };
 
-struct GPSRegimeSettings
-{
-    GPS_DEVICE_WORK_MODE mode{GPS_DEVICE_WORK_MODE::CONTINOUS};
-
-    //gps mode if vibro alarm is present
-    //can't be worse by performance than current
-    GPS_DEVICE_WORK_MODE mode_on_alarm{GPS_DEVICE_WORK_MODE::INVALID}; 
-};
-
-struct GPSAllRegimesSettings
-{
-    GPSRegimeSettings wait_settings;
-    GPSRegimeSettings track_settings;
-    GPSRegimeSettings trail_settings;
-};
 
 struct GPSSettings
 {
     GPSSettings();
     void Save();
-    GPS_REGIME current_regime{GPS_REGIME::WAIT};
-    GPSAllModeSettings regimes_settings;
-    GPSAllModeSettings modes_settings;
+    GPSStateSettings state_settings;
 };
 
 #endif

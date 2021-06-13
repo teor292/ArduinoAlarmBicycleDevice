@@ -4,7 +4,7 @@
 
 #include <Arduino.h>
 
-GPSDeviceBaseState::GPSDeviceBaseState(GPS_DEVICE_WORK_MODE mode)
+GPSDeviceBaseState::GPSDeviceBaseState(const GPSDeviceStateSettings& mode)
     : mode_(mode)
 {
 }
@@ -25,17 +25,17 @@ void GPSDeviceBaseState::ForceResetActive()
 {
 }
 
-GPS_DEVICE_WORK_MODE GPSDeviceBaseState::GetMode() const
+const GPSDeviceStateSettings& GPSDeviceBaseState::GetMode() const
 {
     return mode_;
 }
 
-void GPSDeviceBaseState::SetMode(GPS_DEVICE_WORK_MODE mode)
+void GPSDeviceBaseState::SetMode(const GPSDeviceStateSettings& mode)
 {
     mode_ = mode;
 }
 
-GPSDeviceState::GPSDeviceState(GPS_DEVICE_WORK_MODE mode, unsigned long duration)  
+GPSDeviceState::GPSDeviceState(const GPSDeviceStateSettings& mode, uint32_t duration)  
     : GPSDeviceBaseState(mode),
     duration_(duration)
 {}
@@ -57,6 +57,11 @@ void GPSDeviceState::Active(bool active)
 void GPSDeviceState::ForceResetActive()
 {
     last_alarm_time_ = 0;
+}
+
+void GPSDeviceState::SetDuration(uint32_t duration)
+{
+    duration_ = duration;
 }
 
 #endif

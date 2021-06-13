@@ -70,7 +70,7 @@ GPS_ERROR_CODES GPSDevice::set_mode_(GPS_DEVICE_WORK_MODE mode)
     case GPS_DEVICE_WORK_MODE::PSMCT:
     case GPS_DEVICE_WORK_MODE::PSMOO:
         return set_ps_mode_();
-    case GPS_DEVICE_WORK_MODE::SOFTWARE_OFF:
+    case GPS_DEVICE_WORK_MODE::OFF:
         return set_off_mode_();
     }
     return GPS_ERROR_CODES::NOT_SUPPORTED;

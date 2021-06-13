@@ -13,13 +13,11 @@ class GPSAutoStater
     public:
         explicit GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCallback wait_callback);
       
-        void Initialize(const GPSAllModeSettings& modes_settings);
+        void Initialize();
 
-        GPS_ERROR_CODES SetModesSettings(const GPSAllModeSettings& modes_settings);
+        GPS_ERROR_CODES SetSettings(const GPSStateSettings& settings);
 
-        GPS_ERROR_CODES SetCurrentRegime(GPSRegimeSettings& settings);
-
-        GPSRegimeSettings GetCurrentRegime();
+        GPSStateSettings GetSettings() const;
 
         GPS_ERROR_CODES ResetSettings();
 
@@ -36,29 +34,30 @@ class GPSAutoStater
 
         bool initialized_{false};
 
-        GPSRegimeSettings current_settings_;
-        GPSAllModeSettings modes_settings_;
-
         static const int MAX_STATE_COUNT = 3;
         Array<std::shared_ptr<GPSDeviceBaseState>,MAX_STATE_COUNT> states_;
 
-        uint16_t current_rate_time_{0};
-
-        GPS_ERROR_CODES set_mode_device_(GPS_DEVICE_WORK_MODE mode);
-        GPS_ERROR_CODES set_continous_mode_();
-        GPS_ERROR_CODES set_psmct_mode_();
-        GPS_ERROR_CODES set_psmoo_mode_();
+        GPS_ERROR_CODES set_mode_device_(const GPSDeviceStateSettings& mode);
+        GPS_ERROR_CODES set_continous_mode_(uint32_t rate);
+        GPS_ERROR_CODES set_psmct_mode_(const GPSDeviceStateSettings& mode);
+        GPS_ERROR_CODES set_psmoo_mode_(const GPSDeviceStateSettings& mode);
+        GPS_ERROR_CODES set_psm_mode_(const GPSDeviceStateSettings& mode);
         GPS_ERROR_CODES set_off_mode_();
 
         GPS_ERROR_CODES set_rate_(uint16_t time);
 
-        void check_settings_(GPSRegimeSettings& settings);
+        uint16_t current_rate_time_{1000};
 
-        bool check_equals_(GPS_DEVICE_WORK_MODE mode, const GPSAllModeSettings& settings) const;
-
-        GPS_DEVICE_WORK_MODE get_current_mode_() const;
+        GPSDeviceStateSettings get_current_mode_() const;
 
         void reset_stater_settings_();
+
+        static GPSDeviceStateSettings get_device_states_settings_(const GPSFixSettings& settings);
+        static GPSDeviceStateSettings get_device_states_settings_(const GPSAlarmSettings& settings);
+
+        static GPSDeviceState* default_force_();
+        static GPSDeviceState* default_alarm_();
+        static GPSDeviceBaseState* default_standart_();
         
 };
 

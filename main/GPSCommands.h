@@ -3,19 +3,10 @@
 enum class GPS_COMMANDS
 {
     GET_GPS, //sms: get gps
-    SET_GPS_REGIME, //sms like: set gps regime wait
-    GET_GPS_REGIME, //sms like: get gps regime
-    SET_GPS_REGIME_WAIT, //sms: set gps wait <mode> [<mode_on_alarm>]
-    //available modes: all
-    GET_GPS_REGIME_WAIT, //sms: get gps wait
-
-    SET_GPS_REGIME_TRACK, //sms: set gps track <mode> [<mode_on_alarm>]
-    //available modes: CONTINOUS, PSMCT
-    GET_GPS_REGIME_TRACK, //sms: get gps track
-
-    SET_GPS_REGIME_TRAIL, //sms: set gps trail <mode> [<mode_on_alarm>]
-    //available modes: CONTINOUS, PSMCT, PSMOO
-    GET_GPS_REGIME_TRAIL //sms: get gps trail
-    
+    SET_GPS_FIX, //sms like: set gps fix 0-8600/1m-1440m/1h-24h
+    GET_GPS_FIX, //sms: get gps fix
+    SET_GPS_VIBRO, //sms like: set gps vibro on/max/off [1-10] 
+    GET_GPS_VIBRO, //sms: get gps vibro
+   
 
 };
