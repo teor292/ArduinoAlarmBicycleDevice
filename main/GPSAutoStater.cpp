@@ -5,6 +5,7 @@
 #define FORCE_POS 0
 #define ALARM_POS 1
 #define DEFAULT_POS 2
+#define FORCE_PSM_POS 3
 
 #define DEFAULT_RATE 5000
 
@@ -22,11 +23,15 @@ GPSAutoStater::GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback
     //default states
     states_.push_back(
         std::shared_ptr<GPSDeviceBaseState>(default_alarm_()));
+
+    //force state (by GPSManualPSM)
+    states_.push_back(
+        std::shared_ptr<GPSDeviceBaseState>(default_force_()));
 }
 
 GPSDeviceStateForce* GPSAutoStater::default_force_()
 {
-    return new GPSDeviceStateForce(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::CONTINOUS), 600000UL);
+    return new GPSDeviceStateForce(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::CONTINOUS), GetForceWorkTime());
 }
 GPSDeviceState* GPSAutoStater::default_alarm_()
 {
@@ -98,20 +103,36 @@ void GPSAutoStater::Work(bool alarm)
     set_mode_device_(new_mode);
 }
 
-void GPSAutoStater::Force()
+void GPSAutoStater::Force(GPS_STATER_FORCE force)
 {
     auto current_mode = get_current_mode_();
-    states_[FORCE_POS]->Active(true);
+    switch (force)
+    {
+    case GPS_STATER_FORCE::BY_COMMAND:
+        states_[FORCE_POS]->Active(true);
+        break;
+    case GPS_STATER_FORCE::BY_SERVICE:
+        states_[FORCE_PSM_POS]->Active(true);
+        break;
+    }
     auto new_mode = get_current_mode_();
     if (new_mode == current_mode) return;
 
     set_mode_device_(new_mode);
 }
 
-void GPSAutoStater::ResetForce()
+void GPSAutoStater::ResetForce(GPS_STATER_FORCE force)
 {
     auto current_mode = get_current_mode_();
-    states_[FORCE_POS]->ForceResetActive();
+    switch (force)
+    {
+    case GPS_STATER_FORCE::BY_COMMAND:
+        states_[FORCE_POS]->ForceResetActive();
+        break;
+    case GPS_STATER_FORCE::BY_SERVICE:
+        states_[FORCE_PSM_POS]->ForceResetActive();
+        break;
+    }
     auto new_mode = get_current_mode_();
     if (new_mode == current_mode) return;
 
@@ -146,7 +167,7 @@ GPS_ERROR_CODES GPSAutoStater::set_rate_(uint16_t time)
     if (current_rate_time_ == time) return GPS_ERROR_CODES::OK;
     UBX_CFG_RATE rate;
     rate.message.measRate = time;
-    if (rate.message.measRate < 1000 || rate.message.measRate > 10000)
+    if (1000 > rate.message.measRate || 10000 < rate.message.measRate)
     {
         rate.message.measRate = 1000;
     }
@@ -177,7 +198,7 @@ GPS_ERROR_CODES GPSAutoStater::set_psmct_mode_(const GPSDeviceStateSettings& mod
 
 
     conf.message.updatePeriod = DEFAULT_RATE;
-    conf.message.searchPeriod = mode.GetSearchTime() * 1000;
+    conf.message.searchPeriod = mode.GetSearchTimeMs();
     conf.message.doNotEnterOff = 1;
 
     auto result = device_.SetModeSettings(conf);
@@ -193,13 +214,13 @@ GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_(const GPSDeviceStateSettings& mod
 {
     UBX_CFG_PM2 conf;
 
-    conf.message.updatePeriod = mode.GetTime() * 1000;
+    conf.message.updatePeriod = mode.GetTimeMs();
     //60s - 59m max
     if (60000UL >= conf.message.updatePeriod || 3600000UL <= conf.message.updatePeriod)
     {
         return GPS_ERROR_CODES::INVALID_ARGUMENT;
     }
-    conf.message.searchPeriod = mode.GetSearchTime() * 1000;
+    conf.message.searchPeriod = mode.GetSearchTimeMs();
     if (mode.GetNotEnterOff())
     {
         if (300000UL <= conf.message.updatePeriod)
@@ -249,6 +270,7 @@ void GPSAutoStater::reset_stater_settings_()
     states_[DEFAULT_POS].reset(default_standart_());
     states_[ALARM_POS].reset(default_alarm_());
     states_[FORCE_POS].reset(default_force_());
+    states_[FORCE_PSM_POS].reset(default_force_());
     current_rate_time_ = 1000;
 }
 

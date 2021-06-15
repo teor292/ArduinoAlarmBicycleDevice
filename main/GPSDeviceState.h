@@ -26,6 +26,11 @@ class GPSDeviceStateSettings
             return update_time_;
         }
 
+        uint32_t GetTimeMs() const
+        {
+            return update_time_ * 1000UL;
+        }
+
         bool GetNotEnterOff() const
         {
             return do_not_enter_off_;
@@ -34,6 +39,11 @@ class GPSDeviceStateSettings
         uint32_t GetSearchTime() const
         {
             return search_time_;
+        }
+
+        uint32_t GetSearchTimeMs() const
+        {
+            return GetSearchTime() * 1000UL;
         }
 
         bool operator > (const GPSDeviceStateSettings& settings) const

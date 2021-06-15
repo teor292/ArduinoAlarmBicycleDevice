@@ -8,6 +8,12 @@
 #include "GPSDeviceState.h"
 #include <ArxSmartPtr.h>
 
+enum class GPS_STATER_FORCE
+{
+    BY_COMMAND,
+    BY_SERVICE
+};
+
 class GPSAutoStater
 {
     public:
@@ -25,9 +31,14 @@ class GPSAutoStater
 
         void Work(bool alarm);
 
-        void Force();
+        void Force(GPS_STATER_FORCE force);
 
-        void ResetForce();
+        void ResetForce(GPS_STATER_FORCE force);
+
+        static uint32_t GetForceWorkTime()
+        {
+            return 600000UL;
+        }
     
     protected:
         GPSDevice device_;

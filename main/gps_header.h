@@ -35,6 +35,11 @@ struct GPSFixSettings
     // >= 120 min = 1 h
     // >= 60 min = 30 min)
     uint32_t update_time{0}; 
+
+    uint32_t UpdateTimeMS() const
+    {
+        return update_time * 1000UL;
+    }
 };
 
 enum class GPS_ALARM_MODE
