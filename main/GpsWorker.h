@@ -8,27 +8,42 @@
 #include "TinyGPS++.h"
 #include <Stream.h>
 #include "header.h"
+#include "GPSManualPSM.h"
+#include "GPSAutoStater.h"
+#include "sms.h"
+#include "GPSCommands.h"
+#include "GPSDataGetter.h"
+#include "GPSSmsSender.h"
+#include <Array.h>
 
-class GpsWorker
+class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, public AbstractGPSGetterCallable
 {
     public:
 
-        explicit GpsWorker(Stream& gps_stream);
+        explicit GPSWorker(Stream& gps_stream, Sms& sms);
 
         void Read();
 
-        void Read(uint8_t c);
+        void Work(bool was_alarm);
 
-        void Work();
+        void PerformCommand(const GPSCommandData& command);
 
-        void PerformCommand();
+        bool IsValidGPS(uint32_t valid_period_time) override;
 
+        void NonUBXSymbol(uint8_t c) override;
+
+        bool CheckAge(uint32_t valid_time) override;
+        void Send(const Phone& phone, bool valid) override;
 
     protected:
 
         Stream& gps_stream_;
+        Sms& sms_;
+        GPSAutoStater auto_stater_;
+        GPSManualPSM manual_psm_;
         TinyGPSPlus gps_;
-
+        GPSSmsSender sms_sender_;
+        Array<AbstractGPSSender, 1> senders_;
 };
 
 

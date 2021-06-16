@@ -6,12 +6,18 @@
 
 #include "GPSAutoStater.h"
 
-using GPSFixCallback = bool (*)(uint32_t valid_period_time);
+class AbstractFixCallable
+{
+    public:
+        
+        virtual ~AbstractFixCallable(){}
+        virtual bool IsValidGPS(uint32_t valid_period_time_ms) = 0;
+};
 
 class GPSManualPSM
 {
     public:
-        explicit GPSManualPSM(GPSAutoStater& stater, GPSFixCallback callback);
+        explicit GPSManualPSM(GPSAutoStater& stater, AbstractFixCallable* check);
 
         void UpdateSettings(const GPSFixSettings& fix_settings);
 
@@ -21,7 +27,7 @@ class GPSManualPSM
         //60 seconds valid gps fix time
         const uint32_t VALID_PERIOD_TIME = 60000;
         GPSAutoStater& stater_;
-        GPSFixCallback callback_;
+        AbstractFixCallable* check_;
         GPSFixSettings fix_settings_;
         uint32_t last_time_{0};
         uint32_t next_diff_force_time_{0};

@@ -6,9 +6,9 @@
 
 #define VALID_FIX_TIME 600000UL
 
-GPSManualPSM::GPSManualPSM(GPSAutoStater& stater, GPSFixCallback callback)
+GPSManualPSM::GPSManualPSM(GPSAutoStater& stater, AbstractFixCallable* check)
     : stater_(stater),
-    callback_(callback)
+    check_(check)
 {}
 
 void GPSManualPSM::UpdateSettings(const GPSFixSettings& fix_settings)
@@ -53,7 +53,7 @@ void GPSManualPSM::force_check_start_()
 
 void GPSManualPSM::check_for_fix_()
 {
-    if (callback_(VALID_FIX_TIME + next_diff_force_time_))
+    if (check_->IsValidGPS(VALID_FIX_TIME + next_diff_force_time_))
     {
         reset_force_();
         next_diff_force_time_ = 0;
@@ -82,6 +82,12 @@ void GPSManualPSM::reset_force_()
 
 void GPSManualPSM::active_force_()
 {
+    //if there is valid point by period of time it is not neccessary activate module
+    if (check_->IsValidGPS(VALID_FIX_TIME + next_diff_force_time_))
+    {
+        next_diff_force_time_ = 0;
+        return;
+    }
     stater_.Force(GPS_STATER_FORCE::BY_SERVICE);
     force_activated_ = true;
     force_activate_time_ = millis();

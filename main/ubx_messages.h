@@ -32,7 +32,15 @@ enum class READ_UBX_RESULT : uint8_t
     ERROR_CRC
 };
 
-using NonUbxCallback = void(*)(uint8_t c);
+class AbstractNonUBXCallable
+{
+    public:
+
+        virtual ~AbstractNonUBXCallable(){}
+        virtual void NonUBXSymbol(uint8_t c) = 0;
+};  
+
+using NonUbxCallback = AbstractNonUBXCallable*;
 
 template<typename T>
 class UBX_MESSAGE_
@@ -174,7 +182,7 @@ class UBX_MESSAGE_
             {
                 for (size_t i = 0; i < size; ++i)
                 {
-                    callback(buf[i]);
+                    callback->NonUBXSymbol(buf[i]);
                 }
             }
         }

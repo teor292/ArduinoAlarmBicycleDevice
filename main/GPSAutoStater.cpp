@@ -10,7 +10,8 @@
 #define DEFAULT_RATE 5000
 
 GPSAutoStater::GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCallback wait_callback)
-    : device_(gps_stream, non_ubx_callback, wait_callback)
+    : device_(gps_stream, non_ubx_callback, wait_callback),
+    last_state_(GPS_DEVICE_WORK_MODE::CONTINOUS)
 {
     //force state (by command -> get gps)
     //rate = 5, active time = 10 min
@@ -56,7 +57,6 @@ GPS_ERROR_CODES GPSAutoStater::SetSettings(const GPSStateSettings& settings)
 {
     if (!initialized_) return GPS_ERROR_CODES::NOT_INITIALIZED;
     
-    auto current_mode = get_current_mode_();
 
     auto fix_settings = get_device_states_settings_(settings.fix_settings);
     states_[DEFAULT_POS]->SetMode(fix_settings);
@@ -67,7 +67,7 @@ GPS_ERROR_CODES GPSAutoStater::SetSettings(const GPSStateSettings& settings)
 
     auto new_mode = get_current_mode_();
 
-    if (new_mode != current_mode)
+    if (new_mode != last_state_)
     {
         return set_mode_device_(new_mode);
     }
@@ -93,19 +93,17 @@ void GPSAutoStater::ResetDevice()
     reset_stater_settings_();
 }
 
-void GPSAutoStater::Work(bool alarm)
+GPS_ERROR_CODES GPSAutoStater::Work(bool alarm)
 {
-    auto current_mode = get_current_mode_();
     states_[ALARM_POS]->Active(alarm);
     auto new_mode = get_current_mode_();
-    if (new_mode == current_mode) return;
+    if (new_mode == last_state_) return GPS_ERROR_CODES::OK;
 
-    set_mode_device_(new_mode);
+    return set_mode_device_(new_mode);
 }
 
-void GPSAutoStater::Force(GPS_STATER_FORCE force)
+GPS_ERROR_CODES GPSAutoStater::Force(GPS_STATER_FORCE force)
 {
-    auto current_mode = get_current_mode_();
     switch (force)
     {
     case GPS_STATER_FORCE::BY_COMMAND:
@@ -116,14 +114,13 @@ void GPSAutoStater::Force(GPS_STATER_FORCE force)
         break;
     }
     auto new_mode = get_current_mode_();
-    if (new_mode == current_mode) return;
+    if (new_mode == last_state_) return GPS_ERROR_CODES::OK;
 
-    set_mode_device_(new_mode);
+    return set_mode_device_(new_mode);
 }
 
-void GPSAutoStater::ResetForce(GPS_STATER_FORCE force)
+GPS_ERROR_CODES GPSAutoStater::ResetForce(GPS_STATER_FORCE force)
 {
-    auto current_mode = get_current_mode_();
     switch (force)
     {
     case GPS_STATER_FORCE::BY_COMMAND:
@@ -134,24 +131,32 @@ void GPSAutoStater::ResetForce(GPS_STATER_FORCE force)
         break;
     }
     auto new_mode = get_current_mode_();
-    if (new_mode == current_mode) return;
+    if (new_mode == last_state_) return GPS_ERROR_CODES::OK;
 
-    set_mode_device_(new_mode);
+    return set_mode_device_(new_mode);
 }
 
 GPS_ERROR_CODES GPSAutoStater::set_mode_device_(const GPSDeviceStateSettings& mode)
 {
+    GPS_ERROR_CODES result = GPS_ERROR_CODES::NOT_SUPPORTED;
     switch (mode.GetMode())
     {
     case GPS_DEVICE_WORK_MODE::CONTINOUS:
-        return set_continous_mode_(mode.GetTime());
+        result = set_continous_mode_(mode.GetTime());
+        break;
     case GPS_DEVICE_WORK_MODE::PSMCT:
     case GPS_DEVICE_WORK_MODE::PSMOO:
-        return set_psm_mode_(mode);
+        result = set_psm_mode_(mode);
+        break;
     case GPS_DEVICE_WORK_MODE::OFF:
-        return set_off_mode_();
+        result = set_off_mode_();
+        break;
     }
-    return GPS_ERROR_CODES::NOT_SUPPORTED;
+    if (GPS_OK(result))
+    {
+        last_state_ = mode;
+    }
+    return result;
 }
 
 GPS_ERROR_CODES GPSAutoStater::set_continous_mode_(uint32_t rate)

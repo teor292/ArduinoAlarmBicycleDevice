@@ -6,6 +6,7 @@
 #include "BlockTimeReader.h"
 
 #include "header.h"
+#include "Phone.h"
 
 
 class Sms
@@ -31,7 +32,7 @@ class Sms
         BlockTimeReader& reader_;
         SafeString& g_string_;
 
-        char phone_[PHONE_BUF_LENGTH];
+        Phone phone_;
         char date_[18];
         char text_[25];
 

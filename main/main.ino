@@ -19,7 +19,7 @@
 #include "ModeSerial.h"
 #include "sleep_utils.h"
 #include "MillisCallback.h"
-#include "GpsWorker.h"
+#include "GPSWorker.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -98,7 +98,7 @@ bool was_in_sleep_mode = false;
 
 #if defined(GPS)
 
-GpsWorker gpser(Serial1);
+GPSWorker gpser(Serial1);
 const char GET_GPS[] = "get gps";
 
 void do_get_gps();

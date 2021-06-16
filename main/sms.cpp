@@ -30,7 +30,7 @@ bool Sms::TryReadForwardSmsFromSerial(SafeString& result)
   if (!reader_.NClReadLine(result, 1000)) return false;
   PRINTLN(result);
 
-  createSafeStringFromCharArray(quoted_phone_number, phone_);
+  createSafeStringFromCharArray(quoted_phone_number, phone_.phone);
   if (!cmt_extract_phone_number_(result, quoted_phone_number)) return false;
   PRINTLN(quoted_phone_number);
 
@@ -109,7 +109,7 @@ bool Sms::extract_date_(SafeString& source, SafeString& dst, unsigned char count
 
 const char* Sms::GetPhone() const
 {
-    return phone_;
+    return phone_.phone;
 }
 
 const char* Sms::GetTime() const
@@ -127,7 +127,7 @@ void Sms::SendSms(const char *text)
     static const char AT_CMGS[] = "AT+CMGS=";
    // int count_new_lines = count_new_lines_plus_one(text);
     serial_.print(AT_CMGS);
-    serial_.println(phone_);
+    serial_.println(phone_.phone);
 
     //read >
     if (!reader_.ReadUntil(g_string_, 6000, '>'))

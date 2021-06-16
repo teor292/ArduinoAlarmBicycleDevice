@@ -29,11 +29,11 @@ class GPSAutoStater
 
         void ResetDevice();
 
-        void Work(bool alarm);
+        GPS_ERROR_CODES Work(bool alarm);
 
-        void Force(GPS_STATER_FORCE force);
+        GPS_ERROR_CODES Force(GPS_STATER_FORCE force);
 
-        void ResetForce(GPS_STATER_FORCE force);
+        GPS_ERROR_CODES ResetForce(GPS_STATER_FORCE force);
 
         static uint32_t GetForceWorkTime()
         {
@@ -58,6 +58,7 @@ class GPSAutoStater
         GPS_ERROR_CODES set_rate_(uint16_t time);
 
         uint16_t current_rate_time_{1000};
+        GPSDeviceStateSettings last_state_;
 
         GPSDeviceStateSettings get_current_mode_() const;
 
