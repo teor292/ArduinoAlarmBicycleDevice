@@ -20,6 +20,7 @@
 #include "sleep_utils.h"
 #include "MillisCallback.h"
 #include "GPSWorker.h"
+#include "TextCommands.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -57,8 +58,6 @@ VibroStater vibro(VIBRO_PIN);
 BookReader adminer(SIM800, reader);
 
 
-
-
 const char GET_BATTERY[] = "get battery";
 const char GET_TIME[] = "get time";
 const char GET_SIGNAL[] = "get signal";
@@ -80,6 +79,8 @@ const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
 const char PROHIBIT_CALLS[] = "AT+GSMBUSY=1";
 const char VIBRO_ALARM[] = "!!! Vibro alarm !!!";
 
+
+
 bool get_signal_strength(SafeString& str);
 void perform_command(const char* command);
 void set_alarm_and_sms(unsigned char value);
@@ -97,7 +98,7 @@ bool was_in_sleep_mode = false;
 #if defined(GPS)
 
 
-const char GET_GPS[] = "get gps";
+
 
 //this callback is neccessary for retreiving sms
 //data while GPS work
@@ -546,11 +547,7 @@ void loop()
     }
     #if defined(GPS)
 
-    if (sms_text.startsWith(GET_GPS))
-    {
-      do_get_gps();
-      return;
-    }
+
 
     #endif
     //if smth unknown -> do nothing

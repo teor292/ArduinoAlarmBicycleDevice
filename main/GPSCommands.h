@@ -4,7 +4,7 @@
 
 #if defined(GPS)
 
-
+#include "Phone.h"
 
 enum class GPS_COMMANDS
 {
@@ -21,7 +21,10 @@ enum class GPS_COMMANDS
     SET_GPS_SMS_SEND, //sms like: set gps send sms me/phone 30m-1440m/1h-24h [valid_time 5-3600]
     GET_GPS_SMS_SEND, //sms like: get gps send sms
     SET_GPS_SMS_ALARM, //sms like: set gps send sms alarm me/phone on/off
-    GET_GPS_SMS_ALARM //sms like: get gps send sms alarm
+    GET_GPS_SMS_ALARM, //sms like: get gps send sms alarm
+    GPS_RESET_SETTINGS, //sms: gps reset settings
+    GPS_RESET_DEVICE, //sms: gps reset device
+    INVALID //invalid command
 
 };
 
@@ -32,6 +35,10 @@ struct GPSCommandData
     {
         uint32_t update_time; //seconds, for fix
         uint32_t alarm_time; //seconds, for vibro
+    };
+    union
+    {
+        Phone phone;
     };
 };  
 
