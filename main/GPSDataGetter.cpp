@@ -77,7 +77,7 @@ void GPSDataGetter::remove_non_active_phones_()
             active_phones.push_back(p);
         } else
         {
-            callback_->Send(p, false);
+            callback_->Send(p.phone, false);
         }
     }
     phones_.clear();

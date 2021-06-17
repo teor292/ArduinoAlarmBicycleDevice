@@ -40,14 +40,12 @@ void SERCOM2_Handler()
 
 //this callback is neccessary for retreiving gps
 //data while SIM800 work (send sms, etc.)
-void wait_callback();
-
-
+void wait_callback_for_gps_read();
 
 
 createSafeString(test_string, 200);
 
-MillisReadDelay time_delay(SIM800, wait_callback);
+MillisReadDelay time_delay(SIM800, wait_callback_for_gps_read);
 
 
 BlockTimeReader reader(time_delay);
@@ -98,18 +96,25 @@ bool was_in_sleep_mode = false;
 
 #if defined(GPS)
 
-GPSWorker gpser(Serial1);
+
 const char GET_GPS[] = "get gps";
 
-void do_get_gps();
+//this callback is neccessary for retreiving sms
+//data while GPS work
+void wait_callback_for_sms_read()
+{
+  //TODO
+}
+
+GPSWorker gps_worker(Serial1, sms_one, wait_callback_for_sms_read);
 
 #endif
 
 
-void wait_callback()
+void wait_callback_for_gps_read()
 {
   #if defined(GPS)
-  
+  gps_worker.Read();
   #endif
 }
 

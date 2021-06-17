@@ -30,7 +30,7 @@ void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t 
             text += INVALID;
         }
         text += '\n';
-        append_age_(gps.date.age());
+        append_age_(text, gps.date.age());
     } else
     {
         text += INVALID;
@@ -44,7 +44,7 @@ void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t 
         text += F("lon");
         text += gps.location.lng();
         text += '\n';
-        append_age_(gps.location.age());
+        append_age_(text, gps.location.age());
     } else
     {
         text += INVALID;
@@ -55,7 +55,7 @@ void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t 
     {
         text += gps.altitude.meters();
         text += "m\n";
-        append_age_(gps.altitude.age());
+        append_age_(text, gps.altitude.age());
     } else
     {
         text += INVALID;

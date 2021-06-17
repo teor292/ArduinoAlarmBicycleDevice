@@ -20,7 +20,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
 {
     public:
 
-        explicit GPSWorker(Stream& gps_stream, Sms& sms);
+        explicit GPSWorker(Stream& gps_stream, Sms& sms, WaitCallback wait_callback);
 
         void Read();
 
@@ -38,12 +38,11 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
     protected:
 
         Stream& gps_stream_;
-        Sms& sms_;
         GPSAutoStater auto_stater_;
         GPSManualPSM manual_psm_;
         TinyGPSPlus gps_;
         GPSSmsSender sms_sender_;
-        Array<AbstractGPSSender, 1> senders_;
+        Array<AbstractGPSSender*, 1> senders_;
 };
 
 

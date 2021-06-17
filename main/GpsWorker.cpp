@@ -2,11 +2,13 @@
 
 #if defined(GPS)
 
-GPSWorker::GPSWorker(Stream& stream, Sms& sms)
+GPSWorker::GPSWorker(Stream& stream, Sms& sms, WaitCallback wait_callback)
     : gps_stream_(stream),
-    sms_(sms)
+    auto_stater_(stream, this, wait_callback),
+    manual_psm_(auto_stater_, this),
+    sms_sender_(sms)
 {
-
+    senders_.push_back(&sms_sender_);
 }
 
 void GPSWorker::Read()

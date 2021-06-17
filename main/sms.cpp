@@ -171,8 +171,7 @@ void Sms::SendSms(const char *text)
 
 void Sms::SetPhone(const char* phone)
 {
-  createSafeStringFromCharArray(tmp, phone_);
-  tmp = phone;
+  phone_ = phone;
 }
 
 /*

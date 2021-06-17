@@ -21,7 +21,7 @@ class AbstractGPSGetterCallable
 {
     public:
         virtual ~AbstractGPSGetterCallable(){}
-        virtual bool CheckAge(uint32 valid_time) = 0;
+        virtual bool CheckAge(uint32_t valid_time) = 0;
         virtual void Send(const Phone& phone, bool valid = true) = 0;
 };
 

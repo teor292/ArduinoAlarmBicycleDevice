@@ -27,8 +27,8 @@ void GPSSmsSender::send_gps_(TinyGPSPlus& gps, const Phone& phone, uint32_t vali
 {
     createSafeString(tmp, 255);
     GPSTextCreator::CreateGpsText(tmp, gps, valid_age);
-    sms.SetPhone(phone.phone);
-    sms.SendSms(tmp.c_str());
+    sms_.SetPhone(phone.phone);
+    sms_.SendSms(tmp.c_str());
 }
 
 #endif

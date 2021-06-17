@@ -2,6 +2,7 @@
 
 #include "header.h"
 #include <cstring>
+#include <SafeString.h>
 
 struct Phone
 {
@@ -23,5 +24,12 @@ struct Phone
     bool operator != (const Phone& data) const
     {
         return !((*this) == data);
+    }
+
+    Phone& operator = (const char *data)
+    {
+        createSafeStringFromCharArray(tmp, phone);
+        tmp = data;
+        return *this;
     }
 };
