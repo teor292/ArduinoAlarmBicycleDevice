@@ -20,7 +20,6 @@
 #include "sleep_utils.h"
 #include "MillisCallback.h"
 #include "GPSWorker.h"
-#include "TextCommands.h"
 
 //#define SIM800_INITIALIZATION
 
