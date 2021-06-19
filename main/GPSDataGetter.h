@@ -30,9 +30,9 @@ class GPSDataGetter
     public:
         explicit GPSDataGetter(AbstractGPSGetterCallable* callback);
 
-        void AddToWait(Phone& phone);
+        void AddToWait(const Phone& phone);
 
-        void RemoveFromWait(Phone& phone);
+        void RemoveFromWait(const Phone& phone);
 
         bool IsActive() const;
 

@@ -12,13 +12,13 @@ GPSDataGetter::GPSDataGetter(AbstractGPSGetterCallable* callback)
     : callback_(callback)
 {}
 
-void GPSDataGetter::AddToWait(Phone& phone)
+void GPSDataGetter::AddToWait(const Phone& phone)
 {
     PhoneData phone_data{phone, millis()};
     phones_.push_back(phone_data);
 }
 
-void GPSDataGetter::RemoveFromWait(Phone& phone)
+void GPSDataGetter::RemoveFromWait(const Phone& phone)
 {
     uint16_t i = 0;
     for (; i < phones_.size(); ++i)

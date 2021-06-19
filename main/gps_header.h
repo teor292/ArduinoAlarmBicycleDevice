@@ -9,6 +9,8 @@
 #if defined(GPS)
 
 #include <stdint.h>
+#include <SafeString.h>
+#include "TextCommands.h"
 
 //define work mode of gps module
 enum class GPS_DEVICE_WORK_MODE
@@ -40,6 +42,8 @@ struct GPSFixSettings
     {
         return update_time * 1000UL;
     }
+
+    void ToString(SafeString& result) const;
 };
 
 enum class GPS_ALARM_MODE
@@ -56,20 +60,22 @@ struct GPSAlarmSettings
 {
     GPS_ALARM_MODE mode{GPS_ALARM_MODE::OFF};
     //duration of 'mode' after last alarm, default - 3 min
-    uint8_t duration{3};
+    uint8_t duration{180};
 
     uint32_t GetDurationMs() const
     {
-        return 60UL * 1000UL * duration;
+        return 1000UL * duration;
     }
 
     void Check()
     {
-        if (0 == duration || duration > 60)
+        if (60 > duration || 600 < duration)
         {
-            duration = 3;
+            duration = 180;
         }
     }
+
+    void ToString(SafeString& result) const;
 };
 
 //convience struct for settings
@@ -82,8 +88,8 @@ struct GPSStateSettings
 
 struct GPSSettings
 {
-    GPSSettings();
-    void Save();
+    GPSSettings(){}
+    void Save(){}
     GPSStateSettings state_settings;
 };
 

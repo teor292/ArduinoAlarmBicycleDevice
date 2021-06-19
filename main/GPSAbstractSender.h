@@ -9,10 +9,8 @@
 
 struct SenderData
 {
-    union 
-    {
-        Phone phone;
-    };
+ 
+    Phone phone;
     
 };
 

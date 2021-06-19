@@ -33,16 +33,32 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         void NonUBXSymbol(uint8_t c) override;
 
         bool CheckAge(uint32_t valid_time) override;
-        void Send(const Phone& phone, bool valid) override;
+        void Send(const Phone& phone, bool valid = true) override;
 
     protected:
 
         Stream& gps_stream_;
+        Sms sms_;
         GPSAutoStater auto_stater_;
         GPSManualPSM manual_psm_;
         TinyGPSPlus gps_;
         GPSSmsSender sms_sender_;
-        Array<AbstractGPSSender*, 1> senders_;
+        //Array<AbstractGPSSender*, 1> senders_;
+        GPSDataGetter data_getter_;
+
+        GPSSettings settings_;
+
+        void send_ok_(const GPSCommandData& command);
+        void send_error_(const GPSCommandData& command, GPS_ERROR_CODES code);
+
+        void get_gps_(const GPSCommandData& command);
+        void get_gps_reset_(const GPSCommandData& command);
+        void get_last_gps_(const GPSCommandData& command);
+        void set_gps_fix_(const GPSCommandData& command);
+        void get_gps_fix_(const GPSCommandData& command);
+        void set_gps_vibro_(const GPSCommandData& command);
+        void get_gps_vibro_(const GPSCommandData& command);
+        void set_gps_send_sms_(const GPSCommandData& command);
 };
 
 

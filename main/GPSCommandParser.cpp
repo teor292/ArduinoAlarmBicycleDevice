@@ -2,27 +2,31 @@
 
 #if defined(GPS)
 
+
+const char GET[] = "get";
+const char SET[] = "set";
+const char GPS1[] = "gps";
+const char LAST[] = "last";
+const char FIX[] = "fix";
+const char RESET[] = "reset";
+const char VIBRO[] = "vibro";
+const char MAX[] = "max";
+const char SMS[] = "sms";
+const char ME[] = "me";
+const char PHONE[] = "phone";
+const char SEND[] = "send";
+const char ALARM[] = "alarm";
+const char AGE[] = "age";
+const char SETTINGS[] = "settings";
+const char DEVICE[] = "device";
+
 namespace
 {
-    const char GET[] = "get";
-    const char SET[] = "set";
-    const char GPS1[] = "gps";
-    const char LAST[] = "last";
-    const char FIX[] = "fix";
-    const char RESET[] = "reset";
-    const char VIBRO[] = "vibro";
-    const char MAX[] = "max";
-    const char SMS[] = "sms";
-    const char ME[] = "me";
-    const char PHONE[] = "phone";
-    const char SEND[] = "send";
-    const char ALARM[] = "alarm";
-    const char AGE[] = "age";
-    const char SETTINGS[] = "settings";
-    const char DEVICE[] = "device";
     const char ON[] = "on";
     const char OFF[] = "off";
 }
+
+
 
 
 GPSCommandData GPSCommandParser::ParseSms(SafeString& sms_string, Phone& source_phone)

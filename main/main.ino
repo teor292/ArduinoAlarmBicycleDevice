@@ -77,6 +77,7 @@ const char SLEEP_MODE_COMMAND[] = "AT+CSCLK=2";
 const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
 const char PROHIBIT_CALLS[] = "AT+GSMBUSY=1";
 const char VIBRO_ALARM[] = "!!! Vibro alarm !!!";
+const char UNKNOWN[] = "unknown";
 
 
 
