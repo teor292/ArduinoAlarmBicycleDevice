@@ -13,6 +13,8 @@
 #include <Array.h>
 #include "Phone.h"
 
+void time_to_string(uint32_t time_seconds, SafeString& result);
+
 //define work mode of gps module
 enum class GPS_DEVICE_WORK_MODE
 {
@@ -187,6 +189,9 @@ class SendSettings
             return *this;
         }
 
+        void ToString(SafeString& result) const;
+
+
     private:
         SendSettingData data_;
 };
@@ -202,6 +207,8 @@ class GPSSettings
         GPSStateSettings state_settings;
 
         void AddOrUpdateSendSettings(const SendSettings& settings);
+
+        void RemoveSendSettings(const SendSettings& settings);
         
         const Array<SendSettings, MAX_SMS_SENDERS>& GetSendSettings() const
         {
@@ -210,6 +217,8 @@ class GPSSettings
     private:
 
         Array<SendSettings, MAX_SMS_SENDERS> send_settings_;
+
+        int find_settings_(const SendSettings& settings) const;
 };
 
 #endif

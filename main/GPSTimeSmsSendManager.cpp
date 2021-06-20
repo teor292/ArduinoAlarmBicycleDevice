@@ -10,17 +10,9 @@ GPSTimeSmsSendManager::GPSTimeSmsSendManager(Sms& sms, TinyGPSPlus& gps)
 
 void GPSTimeSmsSendManager::AddOrUpdateSender(const SendSettings& settings)
 {
-    GPSTimeSmsSenderType *founded = nullptr;
-    for (auto& sender : senders_)
-    {
-        if ((*sender) == settings.send_data.values.phone)
-        {
-            founded = &sender;
-            break;
-        }
-    }
+    auto index = find_sender_(settings);
 
-    if (nullptr == founded)
+    if (-1 == index)
     {
         //not found
         if (senders_.max_size() == senders_.size() )
@@ -34,8 +26,16 @@ void GPSTimeSmsSendManager::AddOrUpdateSender(const SendSettings& settings)
     } 
     else
     {
-        (*founded)->SetSettings(settings);
+        senders_[index]->SetSettings(settings);
     }
+}
+
+bool GPSTimeSmsSendManager::RemoveSender(const SendSettings& settings)
+{
+    auto index = find_sender_(settings);
+    if (-1 == index) return false;
+    senders_.remove(index);
+    return true;
 }
 
 void GPSTimeSmsSendManager::Work()
@@ -44,6 +44,20 @@ void GPSTimeSmsSendManager::Work()
     {
         sender->Work();
     }
+}
+
+int GPSTimeSmsSendManager::find_sender_(const SendSettings& settings) const
+{
+    auto cnt = senders_.size();
+    for ( int i = 0; i < cnt; ++i)
+    {
+        auto& sender = senders_[i];
+        if ((*sender) == settings.send_data.values.phone)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void GPSTimeSmsSendManager::notice_replace_(const SendSettings& settings)

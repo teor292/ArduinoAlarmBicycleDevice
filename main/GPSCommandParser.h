@@ -26,8 +26,10 @@ class GPSCommandParser
         static GPSCommandData parse_set_fix_(SafeString& sms_string, Phone& source_phone);
         static GPSCommandData parse_set_vibro_(SafeString& sms_string, Phone& source_phone);
         static GPSCommandData parse_set_send_(SafeString& sms_string, Phone& source_phone);
+        static GPSCommandData parse_set_send_remove_(SafeString& sms_string, Phone& source_phone);
         //static GPSCommandData parse_set_send_alarm_(SafeString& sms_string, Phone& source_phone);
         static bool parse_time_(SafeString& sms_string, uint32_t& result);
+
 };
 
 

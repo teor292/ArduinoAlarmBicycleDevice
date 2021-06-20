@@ -4,24 +4,28 @@
 
 #include "TextCommands.h"
 
+void time_to_string(uint32_t time_seconds, SafeString& result)
+{
+    if (3600 > time_seconds && 0 == time_seconds % 3600UL)
+    {
+        result += time_seconds / 3600UL;
+        result += 'h';
+        return;
+    }
+    if (60 > time_seconds && 0 == time_seconds % 60UL)
+    {
+        result += time_seconds / 60UL;
+        result += 'm';
+        return;
+    }
+    result += time_seconds;
+}
+
 void GPSFixSettings::ToString(SafeString& result) const
 {
     result += FIX;
     result += ' ';
-    if (3600 > update_time && 0 == update_time % 3600UL)
-    {
-        result += update_time / 3600UL;
-        result += 'h';
-        return;
-    }
-    if (60 > update_time && 0 == update_time % 60UL)
-    {
-        result += update_time / 60UL;
-        result += 'm';
-        return;
-    }
-    result += update_time;
-    
+    time_to_string(update_time, result);    
 }
 
 void GPSAlarmSettings::ToString(SafeString& result) const
@@ -94,18 +98,24 @@ void GPSSettings::Save()
     //TODO
 }
 
-void GPSSettings::AddOrUpdateSendSettings(const SendSettings& settings)
+int GPSSettings::find_settings_(const SendSettings& settings) const
 {
-    SendSettings* founded = nullptr;
-    for (auto& send_setting : send_settings_)
+    auto cnt = send_settings_.size();
+    for (int i = 0; i < cnt; ++i)
     {
-        if (send_setting == settings)
+        auto& send_settings = send_settings_[i];
+        if (send_settings == settings)
         {
-            founded = &send_setting;
-            break;
+            return i;
         }
     }
-    if (nullptr == founded)
+    return -1;
+}
+
+void GPSSettings::AddOrUpdateSendSettings(const SendSettings& settings)
+{
+    auto index = find_settings_(settings);
+    if (-1 == index)
     {
         if (send_settings_.max_size() == send_settings_.size())
         {
@@ -115,8 +125,34 @@ void GPSSettings::AddOrUpdateSendSettings(const SendSettings& settings)
     } 
     else
     {
-        *founded = settings;
+        send_settings_[index] = settings;
     }
+}
+
+void GPSSettings::RemoveSendSettings(const SendSettings& settings)
+{
+    auto index = find_settings_(settings);
+    if (-1 == index) return;
+    send_settings_.remove(index);
+}
+
+void SendSettings::ToString(SafeString& result) const
+{
+    if (!result.isEmpty())
+    {
+        result += '\n';
+    }
+    if (SENDER_TYPE::SMS == send_data.type)
+    {
+        result += F("Phone: "); 
+        result += send_data.values.phone.phone;
+        result += '\n';
+    }
+    result += F("Send: ");
+    time_to_string(data_.send_time, result);
+    result += '\n';
+    result += F("Valid: ");
+    time_to_string(data_.valid_time, result);        
 }
 
 

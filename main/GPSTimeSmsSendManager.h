@@ -18,6 +18,8 @@ class GPSTimeSmsSendManager : public AbstractGPSTimeSendManager
 
         void AddOrUpdateSender(const SendSettings& settings) override;
 
+        bool RemoveSender(const SendSettings& settings) override;
+
         void Work() override;
 
     
@@ -29,6 +31,7 @@ class GPSTimeSmsSendManager : public AbstractGPSTimeSendManager
         Array<GPSTimeSmsSenderType, MAX_SMS_SENDERS> senders_;
 
         void notice_replace_(const SendSettings& settings);
+        int find_sender_(const SendSettings& settings) const;
 };
 
 #endif

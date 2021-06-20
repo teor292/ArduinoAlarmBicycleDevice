@@ -11,6 +11,7 @@ class AbstractGPSTimeSendManager
     public:
        virtual ~AbstractGPSTimeSendManager(){}
        virtual void AddOrUpdateSender(const SendSettings& settings) = 0;
+       virtual bool RemoveSender(const SendSettings& settings) = 0;
        virtual void Work() = 0;
 };
 

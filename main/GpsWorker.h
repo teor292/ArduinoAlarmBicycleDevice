@@ -60,6 +60,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         void get_gps_vibro_(const GPSCommandData& command);
         void set_gps_send_sms_(const GPSCommandData& command);
         void get_gps_send_sms_(const GPSCommandData& command);
+        void set_gps_send_sms_remove_(const GPSCommandData& command);
 };
 
 

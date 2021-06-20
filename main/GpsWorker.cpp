@@ -63,20 +63,45 @@ void GPSWorker::PerformCommand(const GPSCommandData& command)
     case GPS_COMMANDS::GET_GPS_SMS_SEND:
         get_gps_send_sms_(command);
         break;
+    case GPS_COMMANDS::SET_GPS_REMOVE_SMS_SEND:
+        set_gps_send_sms_remove_(command);
+        break;
     default:
         break;
     }
     /*
-    SET_GPS_SMS_SEND, //sms like: set gps send sms me/phone 1800-86400/30m-1440m/1h-24h [age 5-3600/1m-60m/1h]
-    GET_GPS_SMS_SEND, //sms like: get gps send sms
     GPS_RESET_SETTINGS, //sms: gps reset settings
     GPS_RESET_DEVICE, //sms: gps reset device
     */
 }
 
+void GPSWorker::set_gps_send_sms_remove_(const GPSCommandData& command)
+{
+    sms_.SetPhone(command.phone.phone);
+    SendSettings settings;
+    settings.send_data.type = SENDER_TYPE::SMS;
+    settings.send_data.values.phone = command.dst_phone;
+
+    if (!sms_send_manager_.RemoveSender(settings))
+    {
+        createSafeString(tmp, 20);
+        tmp += F("Phone not found");
+        sms_.SendSms(tmp.c_str());
+        return;
+    }
+    settings_.RemoveSendSettings(settings);
+}
+
 void GPSWorker::get_gps_send_sms_(const GPSCommandData& command)
 {
-
+    sms_.SetPhone(command.phone.phone);
+    createSafeString(tmp, 255);
+    auto& sender_settings = settings_.GetSendSettings();
+    for (auto &s : sender_settings)
+    {
+        s.ToString(tmp);
+    }
+    sms_.SendSms(tmp.c_str());
 }
 
 void GPSWorker::set_gps_send_sms_(const GPSCommandData& command)

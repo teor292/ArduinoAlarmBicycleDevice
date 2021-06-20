@@ -19,6 +19,7 @@ const char ALARM[] = "alarm";
 const char AGE[] = "age";
 const char SETTINGS[] = "settings";
 const char DEVICE[] = "device";
+const char REMOVE[] = "remove";
 
 namespace
 {
@@ -142,6 +143,25 @@ GPSCommandData GPSCommandParser::parse_set_(SafeString& sms_string, Phone& sourc
 //     return GPSCommandData{GPS_COMMANDS::INVALID};
 // }
 
+GPSCommandData GPSCommandParser::parse_set_send_remove_(SafeString& sms_string, Phone& source_phone)
+{
+    sms_string.substring(sms_string, sizeof(REMOVE));
+    Phone dst_phone = source_phone;
+    if (!sms_string.startsWith(ME))
+    {
+        if (!sms_string.startsWith("+"))
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
+        if (!dst_phone.AssignData(sms_string.c_str(), sms_string.length()))
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
+    } 
+    return GPSCommandData{GPS_COMMANDS::SET_GPS_REMOVE_SMS_SEND, 0, source_phone, dst_phone};
+}
+
+
 GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& source_phone)
 {
     sms_string.substring(sms_string, sizeof(SEND));
@@ -155,6 +175,10 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
     // {
     //     return parse_set_send_alarm_(sms_string, source_phone);
     // }
+    if (sms_string.startsWith(REMOVE))
+    {
+        return parse_set_send_remove_(sms_string, source_phone);
+    }
     if (!sms_string.startsWith(ME))
     {
         if (!sms_string.startsWith("+"))
