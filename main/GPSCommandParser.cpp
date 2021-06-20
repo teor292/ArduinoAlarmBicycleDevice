@@ -145,7 +145,7 @@ GPSCommandData GPSCommandParser::parse_set_(SafeString& sms_string, Phone& sourc
 GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& source_phone)
 {
     sms_string.substring(sms_string, sizeof(SEND));
-    Phone phone = source_phone;
+    Phone dst_phone = source_phone;
     if (!sms_string.startsWith(SMS))
     {
         return GPSCommandData{GPS_COMMANDS::INVALID};
@@ -166,7 +166,7 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
         {
             return GPSCommandData{GPS_COMMANDS::INVALID};
         }
-        if (!phone.AssignData(sms_string.c_str(), index))
+        if (!dst_phone.AssignData(sms_string.c_str(), index))
         {
             return GPSCommandData{GPS_COMMANDS::INVALID};
         }
@@ -198,7 +198,7 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
     }
     if (-1 == tmp_index)
     {
-        return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, phone};
+        return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, source_phone, dst_phone};
     }
     sms_string.substring(sms_string, tmp_index + 1);
     if (!sms_string.startsWith(AGE))
@@ -215,7 +215,7 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
     {
         return GPSCommandData{GPS_COMMANDS::INVALID};
     }
-    return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, phone, age_time};
+    return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, source_phone, dst_phone, age_time};
 
 }
 

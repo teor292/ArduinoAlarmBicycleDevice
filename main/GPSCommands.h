@@ -36,10 +36,10 @@ struct GPSCommandData
         uint32_t update_time{0}; //seconds, for fix
         uint32_t alarm_time; //seconds, for vibro
     };
-    union
-    {
-        Phone phone;
-    };
+    //phone that is set by command or source if not support or not set by command
+    Phone phone;
+    //phone that is set by command
+    Phone dst_phone;
     union
     {
         uint32_t age_time{0};
@@ -65,10 +65,11 @@ struct GPSCommandData
         alarm_mode(mode)
     {}
 
-    explicit GPSCommandData(GPS_COMMANDS command, uint32_t time, const Phone& phone, uint32_t age)
+    explicit GPSCommandData(GPS_COMMANDS command, uint32_t time, const Phone& phone, const Phone& dst_phone, uint32_t age = 0)
         : cmd(command),
         update_time(time),
         phone(phone),
+        dst_phone(dst_phone),
         age_time(age)
 
     {}

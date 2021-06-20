@@ -12,8 +12,8 @@ GPSWorker::GPSWorker(Stream& stream, Sms& sms, WaitCallback wait_callback)
     sms_(sms),
     auto_stater_(stream, this, wait_callback),
     manual_psm_(auto_stater_, this),
-    sms_sender_(sms),
-    data_getter_(this)
+    data_getter_(this),
+    sms_send_manager_(sms, gps_)
 {
     //senders_.push_back(&sms_sender_);
 }
@@ -57,6 +57,12 @@ void GPSWorker::PerformCommand(const GPSCommandData& command)
     case GPS_COMMANDS::GET_GPS_VIBRO:
         get_gps_vibro_(command);
         break;
+    case GPS_COMMANDS::SET_GPS_SMS_SEND:
+        set_gps_send_sms_(command);
+        break;
+    case GPS_COMMANDS::GET_GPS_SMS_SEND:
+        get_gps_send_sms_(command);
+        break;
     default:
         break;
     }
@@ -68,9 +74,25 @@ void GPSWorker::PerformCommand(const GPSCommandData& command)
     */
 }
 
+void GPSWorker::get_gps_send_sms_(const GPSCommandData& command)
+{
+
+}
+
 void GPSWorker::set_gps_send_sms_(const GPSCommandData& command)
 {
-    
+    SendSettings settings;
+    settings.send_data.type = SENDER_TYPE::SMS;
+    settings.send_data.values.phone = command.dst_phone;
+    settings.SetSendTime(command.update_time);
+    if (0 != command.age_time)
+    {
+        settings.SetValidTime(command.age_time);
+    }
+    settings_.AddOrUpdateSendSettings(settings);
+    settings_.Save();
+    sms_send_manager_.AddOrUpdateSender(settings);
+    send_ok_(command);
 }
 
 void GPSWorker::get_gps_vibro_(const GPSCommandData& command)
@@ -126,8 +148,8 @@ void GPSWorker::set_gps_fix_(const GPSCommandData& command)
 void GPSWorker::get_last_gps_(const GPSCommandData& command)
 {
     SenderData data;
-    data.phone = command.phone;
-    sms_sender_.SendGPS(gps_, data, 0);
+    data.values.phone = command.phone;
+    GPSSmsSender::SendGPS(sms_, gps_, data, 0);
 }
 
 void GPSWorker::get_gps_reset_(const GPSCommandData& command)
@@ -181,8 +203,8 @@ bool GPSWorker::CheckAge(uint32_t valid_time)
 void GPSWorker::Send(const Phone& phone, bool valid)
 {
     SenderData data;
-    data.phone = phone;
-    sms_sender_.SendGPS(gps_, data, valid ? 0 : static_cast<uint32_t>(ULONG_MAX));
+    data.values.phone = phone;
+    GPSSmsSender::SendGPS(sms_, gps_, data, valid ? 0 : static_cast<uint32_t>(ULONG_MAX));
 }
 
 #endif

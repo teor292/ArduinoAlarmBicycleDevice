@@ -1,16 +1,17 @@
 #pragma once
 
-//gps support only with SAMD (not enough memory in arduino for all functions)
-#if defined(__SAMD21G18A__)
-#define GPS
-#endif
+#include "gps_define.h"
 
 
 #if defined(GPS)
 
+#include "gps_consts.h"
+
 #include <stdint.h>
 #include <SafeString.h>
 #include "TextCommands.h"
+#include <Array.h>
+#include "Phone.h"
 
 //define work mode of gps module
 enum class GPS_DEVICE_WORK_MODE
@@ -85,12 +86,130 @@ struct GPSStateSettings
     GPSAlarmSettings alarm_settings;
 };
 
-
-struct GPSSettings
+enum class SENDER_TYPE
 {
-    GPSSettings(){}
-    void Save(){}
-    GPSStateSettings state_settings;
+    SMS = 0
+};
+
+//union for sending gps data identifier (currently - phone only (sms))
+struct SenderData
+{
+    SENDER_TYPE type;
+    union SenderValue
+    {
+        SenderValue()
+        {
+            memset(&phone, 0, sizeof(phone));
+        }
+        Phone phone;
+    } values;
+    
+    bool operator == (const SenderData& data) const
+    {
+        if (type != data.type) return false;
+        if (SENDER_TYPE::SMS == type)
+        {
+            return values.phone == data.values.phone;
+        }
+        return false;
+    }
+
+    SenderData& operator = (const SenderData& data)
+    {
+        type = data.type;
+        if (SENDER_TYPE::SMS == type)
+        {
+            values.phone = data.values.phone;
+        }
+        return *this;
+    }
+    
+};
+
+struct SendSettingData
+{
+        //seconds, valid values depends on sender type
+        //0 - off
+        //sms: 1800-86400
+        uint32_t send_time{0};
+        //the time period (seconds) at which the coordinates are considered valid
+        uint32_t valid_time{0};
+
+        uint32_t GetSendTimeMs() const
+        {
+            return send_time * 1000UL;
+        }
+
+        uint32_t GetValidTimeMs() const
+        {
+            return valid_time * 1000UL;
+        }
+};
+
+
+
+class SendSettings
+{
+    public:
+
+        SenderData send_data;
+
+        void SetSendTime(uint32_t send_time);
+        void SetValidTime(uint32_t valid_time)
+        {
+            data_.valid_time = valid_time;
+        }
+
+        uint32_t GetSendTimeMs() const
+        {
+            return data_.GetSendTimeMs();
+        }
+
+        uint32_t GetValidTimeMs() const
+        {
+            return data_.GetValidTimeMs();
+        }
+
+        const SendSettingData& Data() const
+        {
+            return data_;
+        }
+
+        bool operator == (const SendSettings& settings) const
+        {
+            return send_data == settings.send_data;
+        }
+
+        SendSettings& operator = (const SendSettings& settings)
+        {
+            send_data = settings.send_data;
+            data_ = settings.data_;
+            return *this;
+        }
+
+    private:
+        SendSettingData data_;
+};
+
+
+class GPSSettings
+{
+    public:
+
+        GPSSettings();
+        void Save();
+
+        GPSStateSettings state_settings;
+
+        void AddOrUpdateSendSettings(const SendSettings& settings);
+        
+        const Array<SendSettings, MAX_SMS_SENDERS>& GetSendSettings() const
+        {
+            return send_settings_;
+        }
+    private:
+
+        Array<SendSettings, MAX_SMS_SENDERS> send_settings_;
 };
 
 #endif

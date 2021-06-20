@@ -7,20 +7,12 @@
 #include "TinyGPS++.h"
 #include "Phone.h"
 
-struct SenderData
-{
- 
-    Phone phone;
-    
-};
-
 class AbstractGPSSender
 {
     public:
         virtual ~AbstractGPSSender(){}
         virtual void SetDefaultData(const SenderData& data) = 0;
         virtual void SendGPS(TinyGPSPlus& gps) = 0;
-        virtual void SendGPS(TinyGPSPlus& gps, const SenderData& data, uint32_t valid_age) = 0;
 };  
 
 #endif

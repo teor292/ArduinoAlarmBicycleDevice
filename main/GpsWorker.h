@@ -15,6 +15,8 @@
 #include "GPSDataGetter.h"
 #include "GPSSmsSender.h"
 #include <Array.h>
+#include "GPSTimeWrapperSender.h"
+#include "GPSTimeSmsSendManager.h"
 
 class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, public AbstractGPSGetterCallable
 {
@@ -42,11 +44,9 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         GPSAutoStater auto_stater_;
         GPSManualPSM manual_psm_;
         TinyGPSPlus gps_;
-        GPSSmsSender sms_sender_;
-        //Array<AbstractGPSSender*, 1> senders_;
         GPSDataGetter data_getter_;
-
         GPSSettings settings_;
+        GPSTimeSmsSendManager sms_send_manager_;
 
         void send_ok_(const GPSCommandData& command);
         void send_error_(const GPSCommandData& command, GPS_ERROR_CODES code);
@@ -59,6 +59,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         void set_gps_vibro_(const GPSCommandData& command);
         void get_gps_vibro_(const GPSCommandData& command);
         void set_gps_send_sms_(const GPSCommandData& command);
+        void get_gps_send_sms_(const GPSCommandData& command);
 };
 
 

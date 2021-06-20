@@ -16,14 +16,24 @@ class GPSSmsSender : public AbstractGPSSender
 
         void SendGPS(TinyGPSPlus& gps) override;
 
-        void SendGPS(TinyGPSPlus& gps, const SenderData& data, uint32_t valid_age) override;
+        bool operator == (const Phone& phone) const
+        {
+            return phone_ == phone;
+        }
+
+        const Phone& GetPhone() const
+        {
+            return phone_;
+        }
+
+        static void SendGPS(Sms& sms, TinyGPSPlus& gps, const SenderData& data, uint32_t valid_age);
 
     protected:
 
         Sms& sms_;
         Phone phone_;
 
-        void send_gps_(TinyGPSPlus& gps, const Phone& phone, uint32_t valid_age);
+        static void send_gps_(Sms& sms, TinyGPSPlus& gps, const Phone& phone, uint32_t valid_age);
 };
 
 #endif
