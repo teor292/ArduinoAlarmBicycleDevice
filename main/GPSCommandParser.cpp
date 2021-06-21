@@ -3,8 +3,7 @@
 #if defined(GPS)
 
 
-const char GET[] = "get";
-const char SET[] = "set";
+
 const char GPS1[] = "gps";
 const char LAST[] = "last";
 const char FIX[] = "fix";
@@ -25,6 +24,8 @@ namespace
 {
     const char ON[] = "on";
     const char OFF[] = "off";
+    const char GET[] = "get";
+    const char SET[] = "set";
 }
 
 
