@@ -28,8 +28,25 @@ void GPSWorker::Read()
 
 void GPSWorker::Work(bool was_alarm)
 {
+    Read();
     auto_stater_.Work(was_alarm);
     manual_psm_.Work();
+    data_getter_.Work();
+    //force by command do not update last active time
+    //so if new phones arrived -> time not updated
+    //-> if activate many times during force period
+    //if will be deactivated after 10m period from first start
+    //but if call force && reset force repeatedly -> it run from start to max neccessary time
+    if (data_getter_.IsActive())
+    {
+        //TODO send error codes to admin?
+        auto_stater_.Force(GPS_STATER_FORCE::BY_COMMAND);
+    }
+    else
+    {
+        auto_stater_.ResetForce(GPS_STATER_FORCE::BY_COMMAND);
+    }
+    sms_send_manager_.Work();
 }
 
 void GPSWorker::PerformCommand(const GPSCommandData& command)
