@@ -94,9 +94,11 @@ class GPSDeviceBaseState
 
         virtual bool IsActive();
 
-        virtual void Active(bool active);
+        //return true if state was changed
+        virtual bool Activate();
 
-        virtual void ForceResetActive();
+        //return true if state was changed
+        virtual bool ResetActive();
 
         const GPSDeviceStateSettings& GetMode() const;
 
@@ -115,9 +117,9 @@ class GPSDeviceState : public GPSDeviceBaseState
     
         bool IsActive() override;
 
-        void Active(bool active) override;
+        bool Activate() override;
 
-        void ForceResetActive() override;
+        bool ResetActive() override;
 
         void SetDuration(uint32_t duration);
     protected:
@@ -125,12 +127,19 @@ class GPSDeviceState : public GPSDeviceBaseState
         uint32_t last_alarm_time_{0};
 };
 
-class GPSDeviceStateForce : public GPSDeviceState
+class GPSDeviceStateForce : public GPSDeviceBaseState
 {
-    public:
-        using GPSDeviceState::GPSDeviceState;   
+    public: 
 
-        void Active(bool active) override;
+        using GPSDeviceBaseState::GPSDeviceBaseState;
+        bool IsActive() override;
+
+        bool Activate() override;
+
+        bool ResetActive() override;
+    protected:
+        bool active_{false};
 };
+
 
 #endif

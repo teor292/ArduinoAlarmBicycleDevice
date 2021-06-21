@@ -17,12 +17,14 @@ bool GPSDeviceBaseState::IsActive()
     return true;
 }
 
-void GPSDeviceBaseState::Active(bool active)
+bool GPSDeviceBaseState::Activate()
 {
+    return false;
 }
 
-void GPSDeviceBaseState::ForceResetActive()
+bool GPSDeviceBaseState::ResetActive()
 {
+    return false;
 }
 
 const GPSDeviceStateSettings& GPSDeviceBaseState::GetMode() const
@@ -48,15 +50,18 @@ bool GPSDeviceState::IsActive()
     return current_time < last_alarm_time_ + duration_;
 }
 
-void GPSDeviceState::Active(bool active)
+bool GPSDeviceState::Activate()
 {
-    if (!active) return;
+    bool was_active = IsActive();
     last_alarm_time_ = millis();
+    return !was_active;
 }
 
-void GPSDeviceState::ForceResetActive()
+bool GPSDeviceState::ResetActive()
 {
+    bool was_active = IsActive();
     last_alarm_time_ = 0;
+    return was_active;
 }
 
 void GPSDeviceState::SetDuration(uint32_t duration)
@@ -66,11 +71,23 @@ void GPSDeviceState::SetDuration(uint32_t duration)
 
 
 
-void GPSDeviceStateForce::Active(bool active)
+bool GPSDeviceStateForce::IsActive()
 {
-    if (!active) return;
-    if (IsActive()) return;
-    last_alarm_time_ = millis();
+    return active_;
+}
+
+bool GPSDeviceStateForce::Activate()
+{
+    auto old_state = active_;
+    active_ = true;
+    return !old_state;
+}
+
+bool GPSDeviceStateForce::ResetActive() 
+{
+    auto old_state = active_;
+    active_ = false;
+    return old_state;
 }
 
 

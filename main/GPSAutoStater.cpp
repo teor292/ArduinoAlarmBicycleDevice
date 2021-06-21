@@ -32,7 +32,7 @@ GPSAutoStater::GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback
 
 GPSDeviceStateForce* GPSAutoStater::default_force_()
 {
-    return new GPSDeviceStateForce(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::CONTINOUS), GetForceWorkTime());
+    return new GPSDeviceStateForce(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::CONTINOUS));
 }
 GPSDeviceState* GPSAutoStater::default_alarm_()
 {
@@ -95,7 +95,11 @@ void GPSAutoStater::ResetDevice()
 
 GPS_ERROR_CODES GPSAutoStater::Work(bool alarm)
 {
-    states_[ALARM_POS]->Active(alarm);
+    if (alarm)
+    {
+        states_[ALARM_POS]->Activate();
+    }
+
     auto new_mode = get_current_mode_();
     if (new_mode == last_state_) return GPS_ERROR_CODES::OK;
 
@@ -107,10 +111,10 @@ GPS_ERROR_CODES GPSAutoStater::Force(GPS_STATER_FORCE force)
     switch (force)
     {
     case GPS_STATER_FORCE::BY_COMMAND:
-        states_[FORCE_POS]->Active(true);
+        if (!states_[FORCE_POS]->Activate()) return GPS_ERROR_CODES::OK;
         break;
     case GPS_STATER_FORCE::BY_SERVICE:
-        states_[FORCE_PSM_POS]->Active(true);
+        if (!states_[FORCE_PSM_POS]->Activate()) return GPS_ERROR_CODES::OK;
         break;
     }
     auto new_mode = get_current_mode_();
@@ -124,10 +128,10 @@ GPS_ERROR_CODES GPSAutoStater::ResetForce(GPS_STATER_FORCE force)
     switch (force)
     {
     case GPS_STATER_FORCE::BY_COMMAND:
-        states_[FORCE_POS]->ForceResetActive();
+        if (!states_[FORCE_POS]->ResetActive()) return GPS_ERROR_CODES::OK;
         break;
     case GPS_STATER_FORCE::BY_SERVICE:
-        states_[FORCE_PSM_POS]->ForceResetActive();
+        if (!states_[FORCE_PSM_POS]->ResetActive()) return GPS_ERROR_CODES::OK;
         break;
     }
     auto new_mode = get_current_mode_();

@@ -34,11 +34,6 @@ class GPSAutoStater
         GPS_ERROR_CODES Force(GPS_STATER_FORCE force);
 
         GPS_ERROR_CODES ResetForce(GPS_STATER_FORCE force);
-
-        static uint32_t GetForceWorkTime()
-        {
-            return 600000UL;
-        }
     
     protected:
         GPSDevice device_;
