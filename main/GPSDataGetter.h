@@ -30,13 +30,15 @@ class GPSDataGetter
     public:
         explicit GPSDataGetter(AbstractGPSGetterCallable* callback);
 
-        void AddToWait(const Phone& phone);
+        bool AddToWait(const Phone& phone);
 
         void RemoveFromWait(const Phone& phone);
 
         bool IsActive() const;
 
         void Work(); 
+
+        void Reset();
 
     protected:
 
@@ -49,6 +51,8 @@ class GPSDataGetter
         void remove_non_active_phones_();
 
         bool phone_active_(const PhoneData& phone, uint32_t time) const;
+
+        int find_phone_(const Phone& phone) const;
 };
 
 

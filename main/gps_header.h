@@ -96,7 +96,7 @@ enum class SENDER_TYPE
 //union for sending gps data identifier (currently - phone only (sms))
 struct SenderData
 {
-    SENDER_TYPE type;
+    SENDER_TYPE type{SENDER_TYPE::SMS};
     union SenderValue
     {
         SenderValue()

@@ -20,6 +20,8 @@ class GPSTimeSmsSendManager : public AbstractGPSTimeSendManager
 
         bool RemoveSender(const SendSettings& settings) override;
 
+        void Reset() override;
+
         void Work() override;
 
     

@@ -38,6 +38,11 @@ bool GPSTimeSmsSendManager::RemoveSender(const SendSettings& settings)
     return true;
 }
 
+void GPSTimeSmsSendManager::Reset()
+{
+    senders_.clear();
+}
+
 void GPSTimeSmsSendManager::Work()
 {
     for (auto& sender : senders_)

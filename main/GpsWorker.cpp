@@ -66,13 +66,52 @@ void GPSWorker::PerformCommand(const GPSCommandData& command)
     case GPS_COMMANDS::SET_GPS_REMOVE_SMS_SEND:
         set_gps_send_sms_remove_(command);
         break;
+    case GPS_COMMANDS::GPS_RESET_SETTINGS:
+        gps_reset_settings_(command);
+        break;
+    case GPS_COMMANDS::GPS_RESET_DEVICE:
+        gps_reset_device_(command);
+        break;
     default:
+        send_error_(command, GPS_ERROR_CODES::INVALID_ARGUMENT);
         break;
     }
-    /*
-    GPS_RESET_SETTINGS, //sms: gps reset settings
-    GPS_RESET_DEVICE, //sms: gps reset device
-    */
+}
+
+void GPSWorker::gps_reset_device_(const GPSCommandData& command)
+{
+    auto_stater_.ResetDevice();
+    auto result = auto_stater_.SetSettings(settings_.state_settings);
+    
+    if (GPS_ERROR_CODES::OK == result)
+    {
+        settings_.Save();
+        send_ok_(command);
+        return;
+    }
+    settings_.state_settings = GPSStateSettings{};
+    settings_.Save();
+    send_error_(command, result);
+}
+
+void GPSWorker::gps_reset_settings_(const GPSCommandData& command)
+{
+    settings_ = GPSSettings{};
+    settings_.Save();
+   auto stater_result = auto_stater_.ResetSettings();
+   manual_psm_.UpdateSettings(settings_.state_settings.fix_settings);
+   data_getter_.Reset();
+   sms_send_manager_.Reset();
+   if (GPS_ERROR_CODES::OK == stater_result)
+   {
+       send_ok_(command);
+   } else
+   {
+        createSafeString(tmp, 50);
+        tmp = F("Reset ok, but stater return: ");
+        tmp += static_cast<int>(stater_result);
+        sms_.SendSms(tmp.c_str());
+   }
 }
 
 void GPSWorker::set_gps_send_sms_remove_(const GPSCommandData& command)
@@ -206,8 +245,14 @@ void GPSWorker::get_gps_(const GPSCommandData& command)
         return;
     }
     sms_.SetPhone(command.phone.phone);
-    sms_.SendSms("Wait max 10m");
-    data_getter_.AddToWait(command.phone);
+
+    if (!data_getter_.AddToWait(command.phone))
+    {
+        sms_.SendSms("GPS age > 1m, max phones wait reached");
+    } else
+    {
+        sms_.SendSms("Wait max 10m");
+    }
 }
 
 void GPSWorker::NonUBXSymbol(uint8_t c)

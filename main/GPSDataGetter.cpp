@@ -12,10 +12,20 @@ GPSDataGetter::GPSDataGetter(AbstractGPSGetterCallable* callback)
     : callback_(callback)
 {}
 
-void GPSDataGetter::AddToWait(const Phone& phone)
+bool GPSDataGetter::AddToWait(const Phone& phone)
 {
-    PhoneData phone_data{phone, millis()};
-    phones_.push_back(phone_data);
+    auto index = find_phone_(phone);
+    if (-1 == index)
+    {
+        if (phones_.max_size() == phones_.size()) return false;
+        PhoneData phone_data{phone, millis()};
+        phones_.push_back(phone_data);
+        return true;
+    }
+    //update time
+    phones_[index].time = millis();
+    return true;
+
 }
 
 void GPSDataGetter::RemoveFromWait(const Phone& phone)
@@ -60,6 +70,11 @@ void GPSDataGetter::Work()
     phones_.clear();
 }
 
+void GPSDataGetter::Reset()
+{
+    phones_.clear();
+}
+
 bool GPSDataGetter::phone_active_(const PhoneData& phone, uint32_t time) const
 {
     return time - phone.time < TIME_WAIT;
@@ -87,5 +102,15 @@ void GPSDataGetter::remove_non_active_phones_()
     }
 }
 
+int GPSDataGetter::find_phone_(const Phone& phone) const
+{
+    auto cnt = phones_.size();
+    for (int i = 0; i < cnt; ++i)
+    {
+        auto& ph = phones_[i];
+        if (ph.phone == phone) return i;
+    }
+    return -1;
+}
 
 #endif
