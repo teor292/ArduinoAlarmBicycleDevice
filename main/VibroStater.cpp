@@ -48,12 +48,12 @@ bool VibroStater::Update()
 
 }
 
-void VibroStater::SetCountChanges(unsigned int count_changes_per_second)
+void VibroStater::SetCountChanges(int count_changes_per_second)
 {
     count_changes_per_second_ = count_changes_per_second;
 }
 
-void VibroStater::EnableAlarm(unsigned char enable)
+void VibroStater::EnableAlarm(bool enable)
 {
     enabled_ = enable;
     last_alarm_time_ = 0;

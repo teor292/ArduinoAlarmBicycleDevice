@@ -27,14 +27,6 @@ namespace
         result = static_cast<T>(res);
         return true;
     }
-
-    template<typename T, int COUNT = 2>
-    bool convert_to_number_m(SafeString& source, int index, T& result)
-    {
-        if (!convert_to_number<T, COUNT>(source, index, result)) return false;
-        --result;
-        return true;
-    }
 }
 
 bool SmsReader::Write(char c)
@@ -115,12 +107,12 @@ bool SmsReader::extract_date_(SafeString& source, DateTime& dst, unsigned char c
 
     if ('/' != source[index + offset + 2]) return false;
 
-    if (!convert_to_number_m(source, index + offset, dst.month)) return false;
+    if (!convert_to_number(source, index + offset, dst.month)) return false;
 
 
     offset += 3;
 
-    if (!convert_to_number_m(source, index + offset, dst.day)) return false;
+    if (!convert_to_number(source, index + offset, dst.day)) return false;
 
     offset += 2;
     if (',' != source[index + offset]) return false;
@@ -128,17 +120,17 @@ bool SmsReader::extract_date_(SafeString& source, DateTime& dst, unsigned char c
 
     if (':' != source[index + offset + 2]) return false;
 
-    if (!convert_to_number_m(source, index + offset, dst.hours)) return false;
+    if (!convert_to_number(source, index + offset, dst.hours)) return false;
 
     offset += 3;
 
     if (':' != source[index + offset + 2]) return false;
 
-    if (!convert_to_number_m(source, index + offset, dst.minutes)) return false;
+    if (!convert_to_number(source, index + offset, dst.minutes)) return false;
 
     offset += 3;
 
-    if (!convert_to_number_m(source, index + offset, dst.seconds)) return false;
+    if (!convert_to_number(source, index + offset, dst.seconds)) return false;
 
     return true;
 }

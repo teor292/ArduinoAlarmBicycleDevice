@@ -24,8 +24,8 @@ enum class DEFAULT_COMMANDS
 struct DateTime
 {
     uint8_t year{0};
-    uint8_t month{0}; //0-11
-    uint8_t day{0}; //0-30
+    uint8_t month{0}; //1-12
+    uint8_t day{0}; //1-31
     uint8_t hours{0}; //0-23
     uint8_t minutes{0}; //0-59
     uint8_t seconds{0}; //0-59

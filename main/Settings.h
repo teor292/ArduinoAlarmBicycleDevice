@@ -6,7 +6,7 @@
 
 struct Settings
 {
-    unsigned char alarm{0};
+    bool alarm{false};
 
     void Save()
     {
