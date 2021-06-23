@@ -31,3 +31,4 @@
 #endif
 
 #define PHONE_BUF_LENGTH 19
+#define SMS_BUF 255
