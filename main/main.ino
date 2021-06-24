@@ -320,6 +320,7 @@ void clear_buffer()
 
 void do_vibro()
 {
+  vibro_reader.ReadChange();
   if (!adminer.IsEmpty()
     && !SIM800.IsSleepMode()
     && vibro.Update())

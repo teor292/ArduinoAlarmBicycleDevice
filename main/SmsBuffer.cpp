@@ -61,7 +61,7 @@ bool SmsBuffer::Write(char c)
 bool SmsBuffer::IsFilled() const
 {
     //two new lines in sms, multiline sms not supported
-    return = 2 == cnt_ln_;
+    return 2 == cnt_ln_;
 }
 
  SafeString& SmsBuffer::GetSms()
