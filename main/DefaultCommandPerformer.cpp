@@ -38,6 +38,7 @@ DefaultCommandPerformer::DefaultCommandPerformer(Sms& sms,
 
 void DefaultCommandPerformer::PerformCommand(const DefaultCommandData& cmd)
 {
+    PRINTLN(static_cast<int>(cmd.cmd));
     sms_.SetPhone(cmd.phone.phone);
     switch (cmd.cmd)
     {

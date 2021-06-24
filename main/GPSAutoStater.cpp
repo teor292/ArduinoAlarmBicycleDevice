@@ -1,5 +1,7 @@
 #include "GPSAutoStater.h"
 
+#if defined(GPS)
+
 #include <Arduino.h>
 
 #define FORCE_POS 0
@@ -335,3 +337,5 @@ GPSDeviceStateSettings GPSAutoStater::get_device_states_settings_(const GPSAlarm
 
     return GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::OFF);
 }
+
+#endif

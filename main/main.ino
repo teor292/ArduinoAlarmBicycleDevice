@@ -103,7 +103,13 @@ SmsReader sms_reader;
 //data while GPS work
 void wait_callback_for_sms_read()
 {
-  //TODO
+  while (SIM800.available())
+  {
+    char c = (char)SIM800.read();
+    sms_reader.Write(c);
+    PRINT(c);
+  }
+  vibro_reader.ReadChange();
 }
 
 void vibro_changed_alarm_gps_callback(bool alarm_enable)
@@ -129,6 +135,7 @@ void wait_callback_for_gps_read()
   #if defined(GPS)
   gps_worker.Read();
   #endif
+  vibro_reader.ReadChange();
 }
 
 void setup() 

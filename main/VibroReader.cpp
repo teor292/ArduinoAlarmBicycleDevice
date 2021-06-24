@@ -5,7 +5,7 @@
 VibroReader::VibroReader(int input)
     : VIBRO_INPUT(input)
 {
-    pinMode(VIBRO_INPUT, INPUT); //vibro input
+    pinMode(VIBRO_INPUT, INPUT_PULLUP); //vibro input
 }
 
 //inc count of change by 1
@@ -30,7 +30,11 @@ void VibroReader::ReadChange()
 
     if (current_state_ != previous_state_)
     {
-        PRINTLN("VIBRO");
+        PRINT(current_state_);
+        PRINT(" VS ");
+        PRINT(previous_state_);
+        PRINTLN(' ');
+        //PRINTLN("VIBRO");
         ++current_count_changes_;
     }
 }

@@ -1,21 +1,10 @@
 #include "SmsReader.h"
 #include "DefaultCommandParser.h"
 #include "GPSCommandParser.h"
+#include "scope_exit.h"
 
 namespace
 {
-    // bool isdigit(char c)
-    // {
-    //     return c >= '0' && c <= '9';
-    // }
-
-    // bool check_next_two_is_digits(SafeString& str, int index)
-    // {
-    //     if (!isdigit(str[index])) return false;
-    //     if (!isdigit(str[index + 1])) return false;
-    //     return true;
-    // }
-
     template<typename T, int COUNT = 2>
     bool convert_to_number(SafeString& source, int index, T& result)
     {
@@ -42,7 +31,13 @@ bool SmsReader::IsFilled() const
 SmsData SmsReader::Work()
 {
     if (!buffer_.IsFilled()) return SmsData{};
+    auto &buf = buffer_;
+    EXIT_SCOPE([&buf]()
+    {
+        buf.Clear();
+    });
     auto& result = buffer_.GetSms();
+    
 
     PRINTLN(result);
     Phone phone;

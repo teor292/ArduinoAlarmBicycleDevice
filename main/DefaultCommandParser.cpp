@@ -25,6 +25,7 @@ namespace
 DefaultCommandData DefaultCommandParser::ParseSms(SafeString& sms_string, Phone& source_phone)
 {
     sms_string.trim();
+    sms_string.toLowerCase();
     if (sms_string.startsWith(GET))
     {
         return parse_get_(sms_string, source_phone);
