@@ -7,11 +7,12 @@ namespace
     const char OK[] = "OK";
     const char ON[] = "ON";
     const char OFF[] = "OFF";
-    const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
-    const char SLEEP_MODE_COMMAND[] = "AT+CSCLK=2";
     const char SLEEP[] = "sleep";
     const char DEF[] = "def";
 }
+
+const char DEFAULT_MODE_COMMAND[] = "AT+CSCLK=0";
+const char SLEEP_MODE_COMMAND[] = "AT+CSCLK=2";
 
 DefaultCommandPerformer::DefaultCommandPerformer(Sms& sms, 
     BatteryReader& battery, 
