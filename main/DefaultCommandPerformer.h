@@ -9,6 +9,7 @@
 #include "BookReader.h"
 #include "Settings.h"
 #include "VibroStater.h"
+#include "VibroReader.h"
 
 class DefaultCommandPerformer
 {
@@ -21,6 +22,7 @@ class DefaultCommandPerformer
             BookReader& book_reader,
             bool& send_alarm_battery,
             Settings& settings,
+            VibroReader& vibro_reader,
             VibroStater& vibro,
             unsigned long& last_enter_sleep_time);
 
@@ -37,6 +39,7 @@ class DefaultCommandPerformer
         BookReader& book_reader_;
         bool& send_alarm_battery_;
         Settings& settings_;
+        VibroReader& vibro_reader_;
         VibroStater& vibro_;
         unsigned long& last_enter_sleep_time_;
 

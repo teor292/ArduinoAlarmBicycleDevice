@@ -4,42 +4,24 @@
 
 #define ALARM_TIME 2 * 60 * 1000L //1 sms per two minutes
 
-VibroStater::VibroStater(int input)
-    : VIBRO_INPUT(input),
-    count_changes_per_second_(0),
-    current_count_changes_(0),
-    last_millis_(0),
-    last_alarm_time_(0),
-    previous_state_(0),
-    current_state_(0),
-    enabled_(1)
+VibroStater::VibroStater(VibroReader &reader, VibroAlarmChangeCallback callback)
+    : 
+    reader_(reader),
+    alarm_callback_(callback)
 {
-    pinMode(VIBRO_INPUT, INPUT); //vibro input
 }
 
 bool VibroStater::Update()
 {
     if (!enabled_) return false;
-    //reset every one second
+
+    reader_.ReadChange();
+    if (!reader_.IsAlarm()) return false;
+
     auto current_time = millis();
-    if (current_time - last_millis_ > 1000)
-    {
-        last_millis_ = current_time;
-        current_count_changes_ = 0;
-    }
 
-    previous_state_ = current_state_;
-    current_state_ = static_cast<unsigned char>(digitalRead(VIBRO_INPUT)); 
-
-    if (current_state_ != previous_state_)
-    {
-        PRINTLN("VIBRO");
-        ++current_count_changes_;
-    }
-
-    if (current_count_changes_ > count_changes_per_second_
-        && (current_time > last_alarm_time_ + ALARM_TIME
-            || 0 == last_alarm_time_))
+    if (current_time > last_alarm_time_ + ALARM_TIME
+            || 0 == last_alarm_time_)
     {
         last_alarm_time_ = current_time;
         return true;
@@ -48,13 +30,12 @@ bool VibroStater::Update()
 
 }
 
-void VibroStater::SetCountChanges(int count_changes_per_second)
-{
-    count_changes_per_second_ = count_changes_per_second;
-}
-
 void VibroStater::EnableAlarm(bool enable)
 {
+    if (enabled_ != enable)
+    {
+        alarm_callback_(enable);
+    }
     enabled_ = enable;
     last_alarm_time_ = 0;
 }

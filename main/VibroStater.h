@@ -1,31 +1,27 @@
 #pragma once
 
+#include "VibroReader.h"
+#include "vibro_header.h"
 
 class VibroStater
 {
     public:
 
-        explicit VibroStater(int input);
+        explicit VibroStater(VibroReader &reader, VibroAlarmChangeCallback callback);
 
         bool Update();
 
-        void SetCountChanges(int count_changes_per_second);
-
-        int GetCountChanges()
-        {
-            return count_changes_per_second_;
-        } 
-
         void EnableAlarm(bool enable);
+
+        bool IsAlarmEnabled() const
+        {
+            return enabled_;
+        }
 
     private:
 
-        const int VIBRO_INPUT;
-        int count_changes_per_second_;
-        int current_count_changes_;
-        unsigned long last_millis_;
-        unsigned long last_alarm_time_;
-        unsigned char previous_state_;
-        unsigned char current_state_;
-        bool enabled_;
+        VibroReader &reader_;
+        unsigned long last_alarm_time_{0};
+        bool enabled_{false};
+        VibroAlarmChangeCallback alarm_callback_;
 };

@@ -17,12 +17,16 @@
 #include <Array.h>
 #include "GPSTimeWrapperSender.h"
 #include "GPSTimeSmsSendManager.h"
+#include "vibro_header.h"
 
 class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, public AbstractGPSGetterCallable
 {
     public:
 
-        explicit GPSWorker(Stream& gps_stream, Sms& sms, WaitCallback wait_callback);
+        explicit GPSWorker(Stream& gps_stream, Sms& sms, WaitCallback wait_callback,
+            VibroAlarmChangeCallback alarm_change_callback);
+
+        bool IsAlarmEnabled() const;
 
         void Read();
 
@@ -47,6 +51,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         GPSDataGetter data_getter_;
         GPSSettings settings_;
         GPSTimeSmsSendManager sms_send_manager_;
+        VibroAlarmChangeCallback alarm_change_callback_;
 
         void send_ok_(const GPSCommandData& command);
         void send_error_(const GPSCommandData& command, GPS_ERROR_CODES code);

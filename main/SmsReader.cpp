@@ -34,6 +34,11 @@ bool SmsReader::Write(char c)
     return buffer_.Write(c);
 }
 
+bool SmsReader::IsFilled() const
+{
+    return buffer_.IsFilled();
+}
+
 SmsData SmsReader::Work()
 {
     if (!buffer_.IsFilled()) return SmsData{};

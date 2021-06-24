@@ -20,6 +20,8 @@
 #include "sleep_utils.h"
 #include "MillisCallback.h"
 #include "GPSWorker.h"
+#include "DefaultCommandPerformer.h"
+#include "SmsReader.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -53,7 +55,9 @@ BatteryReader battery(test_string, SIM800, reader);
 BatteryChecker battery_checker(battery);
 Sms sms_one(SIM800, reader, test_string);
 
-VibroStater vibro(VIBRO_PIN);
+VibroReader vibro_reader(VIBRO_PIN);
+void vibro_changed_alarm_sms_callback(bool alarm_enable);
+VibroStater vibro(vibro_reader, vibro_changed_alarm_sms_callback);
 BookReader adminer(SIM800, reader);
 
 
@@ -95,6 +99,19 @@ unsigned long last_enter_sleep_time = 0;
 
 bool was_in_sleep_mode = false;
 
+
+DefaultCommandPerformer cmd_performer(sms_one, 
+  battery,
+  SIM800, 
+  reader,
+   adminer,
+   send_alarm_on_low_battery, 
+   settings, 
+   vibro_reader,
+   vibro,last_enter_sleep_time);
+
+SmsReader sms_reader;
+
 #if defined(GPS)
 
 
@@ -107,11 +124,24 @@ void wait_callback_for_sms_read()
   //TODO
 }
 
-GPSWorker gps_worker(Serial1, sms_one, wait_callback_for_sms_read);
+void vibro_changed_alarm_gps_callback(bool alarm_enable)
+{
+  bool result = alarm_enable || vibro.IsAlarmEnabled();
+  vibro_reader.EnableAlarm(result);
+}
+GPSWorker gps_worker(Serial1, sms_one, wait_callback_for_sms_read, vibro_changed_alarm_gps_callback);
 
 #endif
 
-
+void vibro_changed_alarm_sms_callback(bool alarm_enable)
+{
+  bool result = alarm_enable
+  #if defined(GPS)
+     || gps_worker.IsAlarmEnabled()
+  #endif
+  ;
+  vibro_reader.EnableAlarm(result);
+}
 void wait_callback_for_gps_read()
 {
   #if defined(GPS)
@@ -379,22 +409,14 @@ void loop()
 
   do_vibro();
 
- 
-
-
   if (SIM800.available())
   {
     char c = (char)SIM800.read();
-    if (c != '+')
-    {
-      WRITE(c);
-      return;
-    }
-    if (!sms_one.TryReadForwardSmsFromSerial(test_string)) 
-    {
-      PRINTLN(F("Error read CMT sms"));
-      return;
-    }
+    sms_reader.Write(c);
+    PRINT(c);
+    if (!sms_reader.IsFilled()) return;
+    auto result = sms_reader.Work();
+    if (result.IsEmpty()) return;
     //wait for full awake before send data
     if (was_in_sleep_mode) delay(100);
     if (!set_sms_mode(SILINCE_MODE))
@@ -408,151 +430,186 @@ void loop()
       sms_one.DeleteAllSms(test_string);
       set_sms_mode(CMT_MODE);
       );
-
-    char *text = sms_one.GetText();
-    createSafeStringFromCharPtr(sms_text, text);
-    sms_text.toLowerCase();
-    sms_text.trim();
-
-    if (sms_text == GET_BATTERY)
+    if (SMS_DATA_TYPE::DEFAULT_CMD == result.type)
     {
-        if (!battery.ReadBattery())
-        {
-          sms_one.SendSms(ERROR);
-        } else
-        {
-          sms_one.SendSms(battery.GetData());
-        }
-        return;
-    }
-    if (sms_text == GET_TIME)
-    {
-      sms_one.SendSms(sms_one.GetTime());
-      return;
-    }
-    if (sms_text == GET_SIGNAL)
-    {
-      createSafeString(signal_str, 10);
-      if (get_signal_strength(signal_str))
-      {
-        sms_one.SendSms(signal_str.c_str());
-      } else
-      {
-        sms_one.SendSms(ERROR);
-      }
-      return;
-    }
-    if (sms_text == SET_ADMIN)
-    {
-      adminer.SetAdminPhone(sms_one.GetPhone());
-      sms_one.SendSms(OK);
-      return;
-    }
-    if (sms_text.startsWith(LOW_BATTERY))
-    {
-        const char* tmp = sms_text.c_str() + sizeof(LOW_BATTERY) - 1;
-        createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
-        if (tmp_str == ON)
-        {
-          send_alarm_on_low_battery = 1;
-          sms_one.SendSms(OK);
-        } 
-        else if (tmp_str == OFF)
-        {
-          send_alarm_on_low_battery = 0;
-          sms_one.SendSms(OK);
-        }
-        return;
-    }
-    if (sms_text.startsWith(SET_ALARM))
-    {
-        const char* tmp = sms_text.c_str() + sizeof(SET_ALARM) - 1;
-        createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
-        if (tmp_str.startsWith(SENSITY))
-        {
-          const char* tmp2 = tmp_str.c_str() + sizeof(SENSITY) - 1;
-          createSafeStringFromCharPtr(sensity_str, const_cast<char*>(tmp2));
-          int sensity = 0;
-          if (sensity_str.toInt(sensity))
-          {
-            vibro.SetCountChanges(static_cast<unsigned int>(sensity));
-            sms_one.SendSms(OK);
-          } else
-          {
-            sms_one.SendSms(ERROR);
-          }
-          return;
-        }
-        if (tmp_str == ON)
-        {
-          //when alarm enable -> disable sleep mode
-          bool ok = WORK_MODE::SLEEP != SIM800.GetMode();
-          if (WORK_MODE::SLEEP == SIM800.GetMode())
-          {
-            if (perform_sim800_command(DEFAULT_MODE_COMMAND))
-            {
-              PRINTLN(F("SMST"));
-              SIM800.SetMode(WORK_MODE::STANDART);
-              ok = true;
-            }
-          }
-          if (ok)
-          {
-            set_alarm_and_sms(1);
-          } else
-          {
-            sms_one.SendSms(ERROR);
-          }
-
-
-        }
-        else if (tmp_str == OFF)
-        {
-          set_alarm_and_sms(0);
-        }
-        else
-        {
-          sms_one.SendSms(ERROR);
-        }
-        return;
-    }
-
-    if (sms_text.startsWith(SET_MODE))
-    {
-        const char* tmp = sms_text.c_str() + sizeof(SET_MODE) - 1;
-        createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
-        if (tmp_str == SLEEP_MODE)
-        {
-          if (perform_sim800_command(SLEEP_MODE_COMMAND))
-          {
-            vibro.EnableAlarm(0); //disable alarm in sleep mode
-            SIM800.SetMode(WORK_MODE::SLEEP);
-            sms_one.SendSms(OK);
-            last_enter_sleep_time = 0;
-          }
-        }
-        else if (tmp_str == DEFAULT_MODE)
-        {
-          if (perform_sim800_command(DEFAULT_MODE_COMMAND))
-          {
-            SIM800.SetMode(WORK_MODE::STANDART);
-            sms_one.SendSms(OK);
-          } 
-        }
-        else
-        {
-          sms_one.SendSms(ERROR);
-        }
-        return;
+      cmd_performer.PerformCommand(result.cmd.default_command);
     }
     #if defined(GPS)
-
-
-
+    else if (SMS_DATA_TYPE::GPS_CMD == result.type)
+    {
+      gps_worker.PerformCommand(result.cmd.gps_command);
+    }
     #endif
-    //if smth unknown -> do nothing
-      
   }
+ 
+
+  // if (SIM800.available())
+  // {
+  //   char c = (char)SIM800.read();
+  //   if (c != '+')
+  //   {
+  //     WRITE(c);
+  //     return;
+  //   }
+  //   if (!sms_one.TryReadForwardSmsFromSerial(test_string)) 
+  //   {
+  //     PRINTLN(F("Error read CMT sms"));
+  //     return;
+  //   }
+  //   //wait for full awake before send data
+  //   if (was_in_sleep_mode) delay(100);
+  //   if (!set_sms_mode(SILINCE_MODE))
+  //   {
+  //     PRINTLN(F("!sms mode"));
+  //     return;
+  //   }
+  //   //clear buffer if it contains some data
+  //   clear_buffer();
+  //   EXIT_SCOPE_SIMPLE(
+  //     sms_one.DeleteAllSms(test_string);
+  //     set_sms_mode(CMT_MODE);
+  //     );
+
+  //   char *text = sms_one.GetText();
+  //   createSafeStringFromCharPtr(sms_text, text);
+  //   sms_text.toLowerCase();
+  //   sms_text.trim();
+
+  //   if (sms_text == GET_BATTERY)
+  //   {
+  //       if (!battery.ReadBattery())
+  //       {
+  //         sms_one.SendSms(ERROR);
+  //       } else
+  //       {
+  //         sms_one.SendSms(battery.GetData());
+  //       }
+  //       return;
+  //   }
+  //   if (sms_text == GET_TIME)
+  //   {
+  //     sms_one.SendSms(sms_one.GetTime());
+  //     return;
+  //   }
+  //   if (sms_text == GET_SIGNAL)
+  //   {
+  //     createSafeString(signal_str, 10);
+  //     if (get_signal_strength(signal_str))
+  //     {
+  //       sms_one.SendSms(signal_str.c_str());
+  //     } else
+  //     {
+  //       sms_one.SendSms(ERROR);
+  //     }
+  //     return;
+  //   }
+  //   if (sms_text == SET_ADMIN)
+  //   {
+  //     adminer.SetAdminPhone(sms_one.GetPhone());
+  //     sms_one.SendSms(OK);
+  //     return;
+  //   }
+  //   if (sms_text.startsWith(LOW_BATTERY))
+  //   {
+  //       const char* tmp = sms_text.c_str() + sizeof(LOW_BATTERY) - 1;
+  //       createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
+  //       if (tmp_str == ON)
+  //       {
+  //         send_alarm_on_low_battery = 1;
+  //         sms_one.SendSms(OK);
+  //       } 
+  //       else if (tmp_str == OFF)
+  //       {
+  //         send_alarm_on_low_battery = 0;
+  //         sms_one.SendSms(OK);
+  //       }
+  //       return;
+  //   }
+  //   if (sms_text.startsWith(SET_ALARM))
+  //   {
+  //       const char* tmp = sms_text.c_str() + sizeof(SET_ALARM) - 1;
+  //       createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
+  //       if (tmp_str.startsWith(SENSITY))
+  //       {
+  //         const char* tmp2 = tmp_str.c_str() + sizeof(SENSITY) - 1;
+  //         createSafeStringFromCharPtr(sensity_str, const_cast<char*>(tmp2));
+  //         int sensity = 0;
+  //         if (sensity_str.toInt(sensity))
+  //         {
+  //           vibro.SetCountChanges(static_cast<unsigned int>(sensity));
+  //           sms_one.SendSms(OK);
+  //         } else
+  //         {
+  //           sms_one.SendSms(ERROR);
+  //         }
+  //         return;
+  //       }
+  //       if (tmp_str == ON)
+  //       {
+  //         //when alarm enable -> disable sleep mode
+  //         bool ok = WORK_MODE::SLEEP != SIM800.GetMode();
+  //         if (WORK_MODE::SLEEP == SIM800.GetMode())
+  //         {
+  //           if (perform_sim800_command(DEFAULT_MODE_COMMAND))
+  //           {
+  //             PRINTLN(F("SMST"));
+  //             SIM800.SetMode(WORK_MODE::STANDART);
+  //             ok = true;
+  //           }
+  //         }
+  //         if (ok)
+  //         {
+  //           set_alarm_and_sms(1);
+  //         } else
+  //         {
+  //           sms_one.SendSms(ERROR);
+  //         }
+
+
+  //       }
+  //       else if (tmp_str == OFF)
+  //       {
+  //         set_alarm_and_sms(0);
+  //       }
+  //       else
+  //       {
+  //         sms_one.SendSms(ERROR);
+  //       }
+  //       return;
+  //   }
+
+  //   if (sms_text.startsWith(SET_MODE))
+  //   {
+  //       const char* tmp = sms_text.c_str() + sizeof(SET_MODE) - 1;
+  //       createSafeStringFromCharPtr(tmp_str, const_cast<char*>(tmp));
+  //       if (tmp_str == SLEEP_MODE)
+  //       {
+  //         if (perform_sim800_command(SLEEP_MODE_COMMAND))
+  //         {
+  //           vibro.EnableAlarm(0); //disable alarm in sleep mode
+  //           SIM800.SetMode(WORK_MODE::SLEEP);
+  //           sms_one.SendSms(OK);
+  //           last_enter_sleep_time = 0;
+  //         }
+  //       }
+  //       else if (tmp_str == DEFAULT_MODE)
+  //       {
+  //         if (perform_sim800_command(DEFAULT_MODE_COMMAND))
+  //         {
+  //           SIM800.SetMode(WORK_MODE::STANDART);
+  //           sms_one.SendSms(OK);
+  //         } 
+  //       }
+  //       else
+  //       {
+  //         sms_one.SendSms(ERROR);
+  //       }
+  //       return;
+  //   }
+
+  //   //if smth unknown -> do nothing
+      
+  // }
 }
 
 #if defined(GPS)

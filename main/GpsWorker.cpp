@@ -7,13 +7,15 @@ namespace
     const char OK[] = "OK";
 }
 
-GPSWorker::GPSWorker(Stream& stream, Sms& sms, WaitCallback wait_callback)
+GPSWorker::GPSWorker(Stream& stream, Sms& sms, WaitCallback wait_callback,
+    VibroAlarmChangeCallback alarm_change_callback)
     : gps_stream_(stream),
     sms_(sms),
     auto_stater_(stream, this, wait_callback),
     manual_psm_(auto_stater_, this),
     data_getter_(this),
-    sms_send_manager_(sms, gps_)
+    sms_send_manager_(sms, gps_),
+    alarm_change_callback_(alarm_change_callback)
 {
     //senders_.push_back(&sms_sender_);
 }
@@ -24,6 +26,11 @@ void GPSWorker::Read()
     {
         gps_.encode((char)gps_stream_.read());
     }
+}
+
+bool GPSWorker::IsAlarmEnabled() const
+{
+    return GPS_ALARM_MODE::OFF != settings_.state_settings.alarm_settings.mode;
 }
 
 void GPSWorker::Work(bool was_alarm)
@@ -186,6 +193,7 @@ void GPSWorker::get_gps_vibro_(const GPSCommandData& command)
 
 void GPSWorker::set_gps_vibro_(const GPSCommandData& command)
 {
+    auto old_alarm = IsAlarmEnabled();
     auto old_vibro = settings_.state_settings.alarm_settings;
     settings_.state_settings.alarm_settings.mode = command.alarm_mode;
     settings_.state_settings.alarm_settings.duration = command.alarm_time;
@@ -193,6 +201,11 @@ void GPSWorker::set_gps_vibro_(const GPSCommandData& command)
     
     if (GPS_ERROR_CODES::OK == result)
     {
+        auto new_alarm = IsAlarmEnabled();
+        if (old_alarm != new_alarm)
+        {
+            alarm_change_callback_(new_alarm);
+        }
         settings_.Save();
         send_ok_(command);
         return;

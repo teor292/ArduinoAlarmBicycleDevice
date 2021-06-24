@@ -20,6 +20,7 @@ DefaultCommandPerformer::DefaultCommandPerformer(Sms& sms,
     BookReader& book_reader,
     bool& send_alarm_battery,
     Settings& settings,
+    VibroReader& vibro_reader,
     VibroStater& vibro,
     unsigned long& last_enter_sleep_time)
     : sms_(sms),
@@ -29,6 +30,7 @@ DefaultCommandPerformer::DefaultCommandPerformer(Sms& sms,
     book_reader_(book_reader),
     send_alarm_battery_(send_alarm_battery),
     settings_(settings),
+    vibro_reader_(vibro_reader),
     vibro_(vibro),
     last_enter_sleep_time_(last_enter_sleep_time)
 {}
@@ -136,7 +138,7 @@ void DefaultCommandPerformer::set_mode_(const DefaultCommandData& cmd)
 
 void DefaultCommandPerformer::get_alarm_sensity_(const DefaultCommandData& cmd)
 {
-    auto sensity = vibro_.GetCountChanges();
+    auto sensity = vibro_reader_.GetCountChanges();
     createSafeString(tmp, 10);
     tmp += sensity;
     sms_.SendSms(tmp.c_str());
@@ -144,7 +146,7 @@ void DefaultCommandPerformer::get_alarm_sensity_(const DefaultCommandData& cmd)
 
 void DefaultCommandPerformer::set_alarm_sensity_(const DefaultCommandData& cmd)
 {
-    vibro_.SetCountChanges(static_cast<unsigned int>(cmd.sensity));
+    vibro_reader_.SetCountChanges(static_cast<unsigned int>(cmd.sensity));
     sms_.SendSms(OK);
 }
 

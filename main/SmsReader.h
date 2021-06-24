@@ -67,12 +67,13 @@ class SmsReader
 
         bool Write(char c);
 
+        bool IsFilled() const;
+
         SmsData Work();
 
 
     protected:
 
-        Stream& stream_;
         SmsBuffer buffer_;
 
         static bool cmt_extract_phone_number_(SafeString& source, SafeString& dst);
