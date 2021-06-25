@@ -26,7 +26,8 @@ struct UBX_Base
 enum class READ_UBX_RESULT : uint8_t
 {
     OK = 0,
-    ERROR_TIMEOUT = 1,
+    ERROR_TIMEOUT_HEADER = 1,
+    ERROR_TIMEOUT,
     ERROR_MESSAGE_BY_LENGTH,
     ERROR_MESSAGE_BY_TYPE, 
     ERROR_CRC
@@ -54,22 +55,39 @@ class UBX_MESSAGE_
         {     
             crc_();
             auto ptr = reinterpret_cast<uint8_t*>(this);
+            PRINTLN("WRITE:");
             for (size_t i = 0; i < sizeof(*this); ++i)
             {
+                PRINT(ptr[i]);
+                PRINT(' ');
                 stream.write(ptr[i]);
             }
+            PRINTLN(' ');
         }
 
-        READ_UBX_RESULT Read(Stream& stream, NonUbxCallback callback = nullptr, int timeout = 1000,
+        READ_UBX_RESULT Read(Stream& stream, NonUbxCallback callback = nullptr, int timeout = 2000,
              WaitCallback wait_callback = nullptr)
         {   
             MillisReadDelay millis(stream, wait_callback);
             millis.start(timeout);
             auto header_result = read_header_(callback, millis);
-            if (READ_UBX_RESULT::OK != header_result) return header_result;
+            if (READ_UBX_RESULT::OK != header_result) 
+            {
+                PRINTLN("HEADER ERROR");
+                if (READ_UBX_RESULT::ERROR_TIMEOUT == header_result)
+                {
+                    return READ_UBX_RESULT::ERROR_TIMEOUT_HEADER;
+                }
+                return header_result;
+            }
 
             auto body_header_result = read_header_body_part_(millis);
-            if (READ_UBX_RESULT::OK != body_header_result) return body_header_result;
+            if (READ_UBX_RESULT::OK != body_header_result) 
+            {
+                PRINTLN("BODY ERROR");
+                return body_header_result;
+            }
+
 
             if (sizeof(message) - sizeof(UBX_Base) != message.length)
             {
@@ -87,7 +105,11 @@ class UBX_MESSAGE_
             auto remain_read = message.length + 2 * sizeof(uint8_t);
             auto message_result = read_to_buffer_(ptr, remain_read, millis);
 
-            if (READ_UBX_RESULT::OK != message_result) return message_result;
+            if (READ_UBX_RESULT::OK != message_result)
+            {
+                PRINTLN("MESSAGE ERROR");
+                 return message_result;
+            }
             
             auto read_ck_a = ck_a_;
             auto read_ck_b = ck_b_;
@@ -160,6 +182,11 @@ class UBX_MESSAGE_
             while (current_pos < total_size
                 && millis.Read(c_out))
             {
+                // PRINT('[');
+                // PRINT(c_out);
+                // PRINT(' ');
+                // PRINT((char)c_out);
+                // PRINT(']');
                 uint8_t c = static_cast<uint8_t>(c_out);
                 if (c == buf[current_pos])
                 {

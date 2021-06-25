@@ -27,7 +27,7 @@ class GPSAutoStater
 
         GPS_ERROR_CODES ResetSettings();
 
-        void ResetDevice();
+        GPS_ERROR_CODES ResetDevice();
 
         GPS_ERROR_CODES Work(bool alarm);
 
@@ -40,7 +40,7 @@ class GPSAutoStater
 
         bool initialized_{false};
 
-        static const int MAX_STATE_COUNT = 3;
+        static const int MAX_STATE_COUNT = 4;
         Array<std::shared_ptr<GPSDeviceBaseState>,MAX_STATE_COUNT> states_;
 
         GPS_ERROR_CODES set_mode_device_(const GPSDeviceStateSettings& mode);

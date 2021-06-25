@@ -2,6 +2,8 @@
 
 #if defined(GPS)
 
+#include "header.h"
+
 #include <Arduino.h>
 
 #define FORCE_POS 0
@@ -25,7 +27,7 @@ GPSAutoStater::GPSAutoStater(Stream& gps_stream, NonUbxCallback non_ubx_callback
         std::shared_ptr<GPSDeviceBaseState>(default_alarm_()));
     //default states
     states_.push_back(
-        std::shared_ptr<GPSDeviceBaseState>(default_alarm_()));
+        std::shared_ptr<GPSDeviceBaseState>(default_standart_()));
 
     //force state (by GPSManualPSM)
     states_.push_back(
@@ -88,11 +90,14 @@ GPS_ERROR_CODES GPSAutoStater::ResetSettings()
     return result;
 }
 
-void GPSAutoStater::ResetDevice()
+GPS_ERROR_CODES GPSAutoStater::ResetDevice()
 {
-    device_.ResetDevice();
+    auto result = device_.ResetDevice();
+    if (!GPS_OK(result)) return result;
 
     reset_stater_settings_();
+
+    return GPS_ERROR_CODES::OK;
 }
 
 GPS_ERROR_CODES GPSAutoStater::Work(bool alarm)
@@ -167,6 +172,7 @@ GPS_ERROR_CODES GPSAutoStater::set_mode_device_(const GPSDeviceStateSettings& mo
 
 GPS_ERROR_CODES GPSAutoStater::set_continous_mode_(uint32_t rate)
 {
+    PRINTLN("CONTINOUS");
     auto result = device_.SetMode(GPS_DEVICE_WORK_MODE::CONTINOUS);
     if (!GPS_OK(result)) return result;
 
@@ -201,6 +207,7 @@ GPS_ERROR_CODES GPSAutoStater::set_psm_mode_(const GPSDeviceStateSettings& mode)
 
 GPS_ERROR_CODES GPSAutoStater::set_psmct_mode_(const GPSDeviceStateSettings& mode)
 {
+    PRINTLN("PSMCT");
     if (!mode.GetNotEnterOff())
     {
         return GPS_ERROR_CODES::INVALID_ARGUMENT;
@@ -223,6 +230,7 @@ GPS_ERROR_CODES GPSAutoStater::set_psmct_mode_(const GPSDeviceStateSettings& mod
 
 GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_(const GPSDeviceStateSettings& mode)
 {
+    PRINTLN("PSMOO");
     UBX_CFG_PM2 conf;
 
     conf.message.updatePeriod = mode.GetTimeMs();
@@ -240,7 +248,7 @@ GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_(const GPSDeviceStateSettings& mod
         }
         conf.message.doNotEnterOff = 1;
     }
-    if (300000UL >= conf.message.searchPeriod)
+    if (300000UL > conf.message.searchPeriod)
     {
         return GPS_ERROR_CODES::INVALID_ARGUMENT;
     }
@@ -256,6 +264,7 @@ GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_(const GPSDeviceStateSettings& mod
 
  GPS_ERROR_CODES GPSAutoStater::set_off_mode_()
  {
+     PRINTLN("OFF");
      return device_.SetMode(GPS_DEVICE_WORK_MODE::OFF);
  }
 
@@ -316,11 +325,11 @@ GPSDeviceStateSettings GPSAutoStater::get_device_states_settings_(const GPSFixSe
     }
     if (300 <= settings.update_time && 600 > settings.update_time)
     {
-        return GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::PSMOO, settings.update_time, false, 300000UL);
+        return GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::PSMOO, settings.update_time, false);
     }
     if (600 <= settings.update_time && 3600 > settings.update_time)
     {
-        return GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::PSMOO, settings.update_time, false, 600000UL);
+        return GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::PSMOO, settings.update_time, false, 600UL);
     }
     return GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::OFF);
 }

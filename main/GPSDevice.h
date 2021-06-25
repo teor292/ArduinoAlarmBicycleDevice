@@ -29,7 +29,7 @@ class GPSDevice
 
         GPS_ERROR_CODES ResetSettings();
 
-        void ResetDevice();
+        GPS_ERROR_CODES ResetDevice();
 
 
     protected:
@@ -40,7 +40,12 @@ class GPSDevice
         bool initialized_{false};
         bool is_sleep_mode_{true};
 
+        uint32_t last_wake_time_{0};
+        //for off software mode
+        uint16_t current_rate_{1000};
+
         static const int DEFAULT_TIMEOUT = 1200;
+        static const int ATTEMPT_SEND_COUNT = 3;
 
         void wait_(millisDelay& millis);
 
@@ -68,11 +73,20 @@ class GPSDevice
         template<typename T>
         GPS_ERROR_CODES send_message_no_wait_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
-            //Send message
-            message.Send(stream_);
+            //when get gps data vit NMEA protocol
+            //UBX protocol not working!
+            //so when send message -> device ignores it, header not found, must resend
+            GPS_ERROR_CODES code = GPS_ERROR_CODES::UBX_READ_TIMEOUT_HEADER;
+            for ( int i = 0; i < ATTEMPT_SEND_COUNT && GPS_ERROR_CODES::UBX_READ_TIMEOUT_HEADER == code; ++i)
+            {
+                //Send message
+                message.Send(stream_);
 
-            //Read ACK
-            return read_ack_(message.message.clss, message.message.id, timeout);
+                //Read ACK
+                code = read_ack_(message.message.clss, message.message.id, timeout);
+            }
+            return code;
+
         }
 
         template<typename T>
