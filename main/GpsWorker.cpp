@@ -230,6 +230,7 @@ void GPSWorker::set_gps_fix_(const GPSCommandData& command)
     auto result = auto_stater_.SetSettings(settings_.state_settings);
     if (GPS_ERROR_CODES::OK == result)
     {
+        manual_psm_.UpdateSettings(settings_.state_settings.fix_settings);
         settings_.Save();
         send_ok_(command);
         return;

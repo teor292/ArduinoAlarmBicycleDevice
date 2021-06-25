@@ -24,13 +24,12 @@ class GPSManualPSM
         void Work();
 
     protected:
-        //60 seconds valid gps fix time
-        const uint32_t VALID_PERIOD_TIME = 60000;
+
         GPSAutoStater& stater_;
         AbstractFixCallable* check_;
         GPSFixSettings fix_settings_;
         uint32_t last_time_{0};
-        uint32_t next_diff_force_time_{0};
+        uint32_t sum_diff_force_time_{0};
         uint32_t force_activate_time_{0};
         bool force_activated_{false};
 
