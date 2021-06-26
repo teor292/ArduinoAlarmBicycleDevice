@@ -7,12 +7,15 @@
 
 #include "header.h"
 #include <Array.h>
-#include "sms.h"
-#include "TinyGPS++.h"
 #include "Phone.h"
 
 struct PhoneData
 {
+    explicit PhoneData() = default;
+    explicit PhoneData(const Phone& phone, uint32_t time)
+        : phone(phone),
+         time(time)
+    {}
     Phone phone;
     uint32_t time{0};
 };
@@ -32,7 +35,7 @@ class GPSDataGetter
 
         bool AddToWait(const Phone& phone);
 
-        void RemoveFromWait(const Phone& phone);
+        bool RemoveFromWait(const Phone& phone);
 
         bool IsActive() const;
 
@@ -53,6 +56,8 @@ class GPSDataGetter
         bool phone_active_(const PhoneData& phone, uint32_t time) const;
 
         int find_phone_(const Phone& phone) const;
+
+        bool exist_non_active_(uint32_t time) const;
 };
 
 
