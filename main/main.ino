@@ -160,6 +160,14 @@ void setup()
   settings.Load();
   vibro.EnableAlarm(settings.alarm);
 
+  bool enable_alarm = vibro.IsAlarmEnabled()
+    #if defined(GPS)
+      && gps_worker.IsAlarmEnabled()
+    #endif
+      ;
+
+  vibro_reader.EnableAlarm(enable_alarm);
+
   SIM800.begin(GPSBaud); 
 
   //if sim800 in sleep mode and we use standart ->
@@ -226,6 +234,13 @@ void setup()
   Serial.println(adminer.GetAdminPhone());
 
 #endif
+
+
+  #if defined(GPS)
+  Serial1.begin(9600);
+  while (!Serial1);
+  gps_worker.Initialize();
+  #endif
 }
 
 void wait_for_ok();
@@ -375,6 +390,10 @@ void loop()
     //microcontroller can awake not by timer
     //but by sms, so it must read sms before check battery
     do_battery();
+
+    #if defined(GPS)
+    gps_worker.Work(vibro_reader.IsAlarm());
+    #endif
 
     if (!SIM800.IsSleepMode()) return;
 

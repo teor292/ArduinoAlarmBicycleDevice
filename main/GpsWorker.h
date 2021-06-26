@@ -26,6 +26,8 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         explicit GPSWorker(Stream& gps_stream, Sms& sms, WaitCallback wait_callback,
             VibroAlarmChangeCallback alarm_change_callback);
 
+        void Initialize();
+
         bool IsAlarmEnabled() const;
 
         void Read();

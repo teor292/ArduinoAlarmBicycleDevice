@@ -63,6 +63,10 @@ SmsData SmsReader::Work()
 
 SmsData SmsReader::parse_command_(SafeString& sms_string, DateTime& date, Phone& phone)
 {
+    #if defined(GPS)
+    createSafeString(sms_string_2, SMS_BUF - 20);
+    sms_string_2 = sms_string;
+    #endif
     auto default_command = DefaultCommandParser::ParseSms(sms_string, phone);
     if (DEFAULT_COMMANDS::INVALID != default_command.cmd)
     {
@@ -71,7 +75,7 @@ SmsData SmsReader::parse_command_(SafeString& sms_string, DateTime& date, Phone&
     }
     #if defined(GPS)
     
-    auto gps_command = GPSCommandParser::ParseSms(sms_string, phone);
+    auto gps_command = GPSCommandParser::ParseSms(sms_string_2, phone);
     if (GPS_COMMANDS::INVALID != gps_command.cmd)
     {
         return SmsData{gps_command};

@@ -12,19 +12,19 @@ void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t 
     text += F("Date: ");
     if (gps.date.isValid() && (0 == valid_age || (0 != valid_age && gps.date.age() < valid_age) ))
     {
-        text += gps.date.day();
+        add_value_(text, gps.date.day());
         text += '.';
-        text += gps.date.month();
+        add_value_(text, gps.date.month());
         text += '.';
-        text += gps.date.year();
+        add_value_(text, gps.date.year());
         text += " ";
         if (gps.time.isValid())
         {
-            text += gps.time.hour();
+            add_value_(text, gps.time.hour());
             text += ':';
-            text += gps.time.minute();
+            add_value_(text, gps.time.minute());
             text += ':';
-            text += gps.time.second();
+            add_value_(text, gps.time.second());
         } else
         {   
             text += INVALID;
@@ -39,10 +39,15 @@ void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t 
     text += F("Location: ");
     if (gps.location.isValid() && (0 == valid_age || (0 != valid_age && gps.location.age() < valid_age) ))
     {
-        text += F("lat ");
-        text += gps.location.lat();
-        text += F("lon");
-        text += gps.location.lng();
+        text += F("lat: ");
+        createSafeString(tmp, 15);
+        tmp.print(gps.location.lat(), 7);
+        text += tmp;
+        text += "; ";
+        text += F("lon: ");
+        tmp.clear();
+        tmp.print(gps.location.lng(), 7);
+        text += tmp;
         text += '\n';
         append_age_(text, gps.location.age());
     } else
@@ -72,12 +77,21 @@ void GPSTextCreator::append_age_(SafeString& text, uint32_t time)
     time /= 60;
 
     text += F("Age: ");
-    text += time;
+    add_value_(text, time);
     text += ':';
-    text += minutes;
+    add_value_(text, minutes);
     text += ':';
-    text += seconds;
+    add_value_(text, seconds);
     text += '\n';
+}
+
+void GPSTextCreator::add_value_(SafeString& text, uint32_t value)
+{
+    if (value < 10)
+    {
+        text += '0';
+    }
+    text += value;
 }
 
 #endif

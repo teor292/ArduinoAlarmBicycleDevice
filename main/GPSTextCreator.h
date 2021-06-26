@@ -16,6 +16,7 @@ class GPSTextCreator
     private:
 
         static void append_age_(SafeString& text, uint32_t time);
+        static void add_value_(SafeString& text, uint32_t value);
 };
 
 #endif

@@ -17,6 +17,7 @@ void VibroReader::ForceChange()
 //read pin and inc if changed
 void VibroReader::ReadChange()
 {
+    if (!enabled_) return;
     //reset every one second
     auto current_time = millis();
     if (current_time - last_millis_ > 1000)
@@ -37,6 +38,7 @@ void VibroReader::ReadChange()
 //is current in alarming
 bool VibroReader::IsAlarm()
 {
+    if (!enabled_) return false;
     return current_count_changes_ > count_changes_per_second_;
 }
 

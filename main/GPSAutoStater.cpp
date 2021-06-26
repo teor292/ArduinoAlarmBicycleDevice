@@ -188,8 +188,13 @@ GPS_ERROR_CODES GPSAutoStater::set_rate_(uint16_t time)
     {
         rate.message.measRate = 1000;
     }
-    current_rate_time_ = rate.message.measRate;
-    return device_.SetRate(rate);
+    
+    auto result = device_.SetRate(rate);
+    if (GPS_OK(result))
+    {
+        current_rate_time_ = rate.message.measRate;
+    }
+    return result;
 }
 
 

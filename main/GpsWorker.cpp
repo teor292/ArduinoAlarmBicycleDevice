@@ -17,14 +17,33 @@ GPSWorker::GPSWorker(Stream& stream, Sms& sms, WaitCallback wait_callback,
     sms_send_manager_(sms, gps_),
     alarm_change_callback_(alarm_change_callback)
 {
-    //senders_.push_back(&sms_sender_);
+
+}
+
+void GPSWorker::Initialize()
+{
+    auto_stater_.Initialize();
+    auto result = auto_stater_.SetSettings(settings_.state_settings);
+    if (GPS_ERROR_CODES::OK != result)
+    {
+        PRINT("ERROR stater set settings: ");
+        PRINTLN((int)result);
+    }
+    else
+    {
+        PRINTLN("Stater set settings OK");
+    }
+    manual_psm_.UpdateSettings(settings_.state_settings.fix_settings);
+
 }
 
 void GPSWorker::Read()
 {
     while (gps_stream_.available())
     {
-        gps_.encode((char)gps_stream_.read());
+        char c = (char)gps_stream_.read();
+        PRINT(c);
+        gps_.encode(c);
     }
 }
 
@@ -36,14 +55,10 @@ bool GPSWorker::IsAlarmEnabled() const
 void GPSWorker::Work(bool was_alarm)
 {
     Read();
-    auto_stater_.Work(was_alarm);
+    
     manual_psm_.Work();
     data_getter_.Work();
-    //force by command do not update last active time
-    //so if new phones arrived -> time not updated
-    //-> if activate many times during force period
-    //if will be deactivated after 10m period from first start
-    //but if call force && reset force repeatedly -> it run from start to max neccessary time
+
     if (data_getter_.IsActive())
     {
         //TODO send error codes to admin?
@@ -53,6 +68,7 @@ void GPSWorker::Work(bool was_alarm)
     {
         auto_stater_.ResetForce(GPS_STATER_FORCE::BY_COMMAND);
     }
+    auto_stater_.Work(was_alarm);
     sms_send_manager_.Work();
 }
 
@@ -249,8 +265,16 @@ void GPSWorker::get_last_gps_(const GPSCommandData& command)
 
 void GPSWorker::get_gps_reset_(const GPSCommandData& command)
 {
-    data_getter_.RemoveFromWait(command.phone);
-    send_ok_(command);
+    auto result = data_getter_.RemoveFromWait(command.phone);
+    if (result)
+    {
+        send_ok_(command);
+    }
+    else
+    {
+        sms_.SendSms("Not found");
+    }
+
 }
 
 void GPSWorker::send_ok_(const GPSCommandData& command)

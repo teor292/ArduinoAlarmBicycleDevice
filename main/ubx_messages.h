@@ -4,6 +4,8 @@
 #include <Stream.h>
 #include "MillisCallback.h"
 
+#define PACKED __attribute__ ((packed))
+
 struct UBX_Base
 {
     UBX_Base(uint8_t clss, uint8_t id, uint16_t length = 0)
@@ -324,7 +326,7 @@ struct UBX_CFG_RATE_BASE_ : UBX_Base
     TIME_REF timeRef{TIME_REF::GPS_TIME};
 };
 
-struct UBX_RXM_PMREQ_BASE_ : UBX_Base
+struct PACKED UBX_RXM_PMREQ_BASE_ : UBX_Base
 {
     UBX_RXM_PMREQ_BASE_()
         : UBX_Base{0x02, 0x41, 8}
