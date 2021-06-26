@@ -5,8 +5,7 @@
 void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t valid_age)
 {
     //TODO
-    //1. Location -> reference to google maps
-    //2. Age by date and not period
+    //1. Age by date and not period
     const auto INVALID = F("invalid\n");
     text.clear();
     text += F("Date: ");

@@ -270,7 +270,12 @@ GPS_ERROR_CODES GPSAutoStater::set_psmoo_mode_(const GPSDeviceStateSettings& mod
  GPS_ERROR_CODES GPSAutoStater::set_off_mode_()
  {
      PRINTLN("OFF");
-     return device_.SetMode(GPS_DEVICE_WORK_MODE::OFF);
+     auto result = device_.SetMode(GPS_DEVICE_WORK_MODE::OFF);
+     if (GPS_OK(result))
+     {
+         current_rate_time_ = 1000; //gps device default
+     }
+     return result;
  }
 
 GPSDeviceStateSettings GPSAutoStater::get_current_mode_() const
