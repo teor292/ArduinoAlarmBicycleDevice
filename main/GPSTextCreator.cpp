@@ -39,12 +39,11 @@ void GPSTextCreator::CreateGpsText(SafeString& text, TinyGPSPlus& gps, uint32_t 
     text += F("Location: ");
     if (gps.location.isValid() && (0 == valid_age || (0 != valid_age && gps.location.age() < valid_age) ))
     {
-        text += F("lat: ");
+        text += F("http://maps.google.com/maps?q=");
         createSafeString(tmp, 15);
         tmp.print(gps.location.lat(), 7);
         text += tmp;
-        text += "; ";
-        text += F("lon: ");
+        text += ",";
         tmp.clear();
         tmp.print(gps.location.lng(), 7);
         text += tmp;
