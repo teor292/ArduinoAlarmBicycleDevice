@@ -8,6 +8,12 @@ VibroReader::VibroReader(int input)
     pinMode(VIBRO_INPUT, INPUT); //vibro input
 }
 
+bool VibroReader::AddVibroCallback(AbstractVibroCallback* callback)
+{
+    if (callbacks_.size() == callbacks_.max_size()) return false;
+    callbacks_.push_back(callback);
+}
+
 //inc count of change by 1
 void VibroReader::ForceChange()
 {
@@ -34,12 +40,10 @@ void VibroReader::ReadChange()
         PRINTLN("VIBRO");
         ++current_count_changes_;
     }
-}
-//is current in alarming
-bool VibroReader::IsAlarm()
-{
-    if (!enabled_) return false;
-    return current_count_changes_ > count_changes_per_second_;
+    for (auto& callback : callbacks_)
+    {
+        callback->Alarm(current_count_changes_ > count_changes_per_second_);
+    }
 }
 
 void VibroReader::SetCountChanges(int count_changes_per_second)

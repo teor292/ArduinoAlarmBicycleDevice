@@ -173,7 +173,7 @@ GPS_ERROR_CODES GPSDevice::ResetDevice()
 
 GPS_ERROR_CODES GPSDevice::set_continous_mode_()
 {
-    PRINTLN("CONT");
+    PRINTLN("CONT_MODE");
     auto result = send_rxm_msg_(LP_MODE::CONTINOUS);
     //only if ok set is_sleep_mode_ to false
     is_sleep_mode_ = !GPS_OK(result);
@@ -182,6 +182,7 @@ GPS_ERROR_CODES GPSDevice::set_continous_mode_()
 
 GPS_ERROR_CODES GPSDevice::set_ps_mode_()
 {
+    PRINTLN("PS_MODE");
     //don't check result. 
     //If failed and set is_sleep_mode_ to true then everything will be ok,
     //but additional delay 500 ms

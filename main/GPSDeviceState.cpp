@@ -3,6 +3,7 @@
 #if defined(GPS)
 
 #include <Arduino.h>
+#include "header.h"
 
 GPSDeviceBaseState::GPSDeviceBaseState(const GPSDeviceStateSettings& mode)
     : mode_(mode)
@@ -67,6 +68,8 @@ bool GPSDeviceState::ResetActive()
 void GPSDeviceState::SetDuration(uint32_t duration)
 {
     duration_ = duration;
+    PRINT("Duration: ");
+    PRINTLN(duration);
 }
 
 

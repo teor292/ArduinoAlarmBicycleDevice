@@ -58,7 +58,7 @@ Sms sms_one(SIM800, reader, test_string);
 
 VibroReader vibro_reader(VIBRO_PIN);
 void vibro_changed_alarm_sms_callback(bool alarm_enable);
-VibroStater vibro(vibro_reader, vibro_changed_alarm_sms_callback);
+VibroStater vibro(vibro_changed_alarm_sms_callback);
 BookReader adminer(SIM800, reader);
 
 
@@ -140,6 +140,11 @@ void wait_callback_for_gps_read()
 
 void setup() 
 {
+  vibro_reader.AddVibroCallback(&vibro);
+  #if defined(GPS)
+  vibro_reader.AddVibroCallback(gps_worker.GetVibroStater());
+  #endif
+
   //configure here because sim800l due to lack of amperage can
   //reboot while initialization if D2 (INT0) in in default mode
   pinMode(AWAKE_SIM800_PIN, INPUT); 
@@ -392,7 +397,7 @@ void loop()
     do_battery();
 
     #if defined(GPS)
-    gps_worker.Work(vibro_reader.IsAlarm());
+    gps_worker.Work();
     #endif
 
     if (!SIM800.IsSleepMode()) return;

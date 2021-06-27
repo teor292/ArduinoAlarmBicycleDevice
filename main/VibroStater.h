@@ -3,11 +3,11 @@
 #include "VibroReader.h"
 #include "vibro_header.h"
 
-class VibroStater
+class VibroStater : public AbstractVibroCallback
 {
     public:
 
-        explicit VibroStater(VibroReader &reader, VibroAlarmChangeCallback callback);
+        explicit VibroStater(VibroAlarmChangeCallback callback);
 
         bool Update();
 
@@ -18,10 +18,12 @@ class VibroStater
             return enabled_;
         }
 
+        void Alarm(bool alarm) override;
+
     private:
 
-        VibroReader &reader_;
         unsigned long last_alarm_time_{0};
         bool enabled_{false};
+        bool is_alarm_{false};
         VibroAlarmChangeCallback alarm_callback_;
 };

@@ -77,7 +77,9 @@ class GPSDevice
             //UBX protocol not working!
             //so when send message -> device ignores it, header not found, must resend
             GPS_ERROR_CODES code = GPS_ERROR_CODES::UBX_READ_TIMEOUT_HEADER;
-            for ( int i = 0; i < ATTEMPT_SEND_COUNT && GPS_ERROR_CODES::UBX_READ_TIMEOUT_HEADER == code; ++i)
+            for ( int i = 0; i < ATTEMPT_SEND_COUNT 
+                && (GPS_ERROR_CODES::UBX_READ_TIMEOUT_HEADER == code 
+                    || GPS_ERROR_CODES::UBX_OTHER_MESSAGE == code); ++i)
             {
                 //Send message
                 message.Send(stream_);

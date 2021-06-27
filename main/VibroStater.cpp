@@ -4,19 +4,24 @@
 
 #define ALARM_TIME 2 * 60 * 1000L //1 sms per two minutes
 
-VibroStater::VibroStater(VibroReader &reader, VibroAlarmChangeCallback callback)
+VibroStater::VibroStater(VibroAlarmChangeCallback callback)
     : 
-    reader_(reader),
     alarm_callback_(callback)
 {
+}
+
+void VibroStater::Alarm(bool alarm) 
+{
+    if (!enabled_) return;
+    is_alarm_ |= alarm;
 }
 
 bool VibroStater::Update()
 {
     if (!enabled_) return false;
 
-    reader_.ReadChange();
-    if (!reader_.IsAlarm()) return false;
+    if (!is_alarm_) return false;
+    is_alarm_ = false;
 
     auto current_time = millis();
 
@@ -38,4 +43,5 @@ void VibroStater::EnableAlarm(bool enable)
     }
     enabled_ = enable;
     last_alarm_time_ = 0;
+    is_alarm_ = false;
 }

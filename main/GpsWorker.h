@@ -18,6 +18,7 @@
 #include "GPSTimeWrapperSender.h"
 #include "GPSTimeSmsSendManager.h"
 #include "vibro_header.h"
+#include "GPSVibroStater.h"
 
 class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, public AbstractGPSGetterCallable
 {
@@ -32,7 +33,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
 
         void Read();
 
-        void Work(bool was_alarm);
+        void Work();
 
         void PerformCommand(const GPSCommandData& command);
 
@@ -42,6 +43,11 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
 
         bool CheckAge(uint32_t valid_time) override;
         void Send(const Phone& phone, bool valid = true) override;
+
+        GPSVibroStater* GetVibroStater()
+        {
+            return &vibro_stater_;
+        }
 
     protected:
 
@@ -54,6 +60,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         GPSSettings settings_;
         GPSTimeSmsSendManager sms_send_manager_;
         VibroAlarmChangeCallback alarm_change_callback_;
+        GPSVibroStater vibro_stater_;
 
         void send_ok_(const GPSCommandData& command);
         void send_error_(const GPSCommandData& command, GPS_ERROR_CODES code);

@@ -17,7 +17,7 @@ GPSWorker::GPSWorker(Stream& stream, Sms& sms, WaitCallback wait_callback,
     sms_send_manager_(sms, gps_),
     alarm_change_callback_(alarm_change_callback)
 {
-
+  
 }
 
 void GPSWorker::Initialize()
@@ -34,6 +34,7 @@ void GPSWorker::Initialize()
         PRINTLN("Stater set settings OK");
     }
     manual_psm_.UpdateSettings(settings_.state_settings.fix_settings);
+    vibro_stater_.EnableAlarm(IsAlarmEnabled());
 
 }
 
@@ -52,7 +53,7 @@ bool GPSWorker::IsAlarmEnabled() const
     return GPS_ALARM_MODE::OFF != settings_.state_settings.alarm_settings.mode;
 }
 
-void GPSWorker::Work(bool was_alarm)
+void GPSWorker::Work()
 {
     Read();
     
@@ -61,14 +62,14 @@ void GPSWorker::Work(bool was_alarm)
 
     if (data_getter_.IsActive())
     {
-        //TODO send error codes to admin?
+        //send error codes to admin???
         auto_stater_.Force(GPS_STATER_FORCE::BY_COMMAND);
     }
     else
     {
         auto_stater_.ResetForce(GPS_STATER_FORCE::BY_COMMAND);
     }
-    auto_stater_.Work(was_alarm);
+    auto_stater_.Work(vibro_stater_.IsAlarm());
     sms_send_manager_.Work();
 }
 
@@ -217,7 +218,13 @@ void GPSWorker::set_gps_vibro_(const GPSCommandData& command)
     auto old_alarm = IsAlarmEnabled();
     auto old_vibro = settings_.state_settings.alarm_settings;
     settings_.state_settings.alarm_settings.mode = command.alarm_mode;
-    settings_.state_settings.alarm_settings.duration = command.alarm_time;
+    auto alarm_time = command.alarm_time;
+    if (0 == alarm_time)
+    {
+        GPSAlarmSettings tmp;
+        alarm_time = tmp.duration;
+    }
+    settings_.state_settings.alarm_settings.duration = alarm_time;
     auto result = auto_stater_.SetSettings(settings_.state_settings);
     
     if (GPS_ERROR_CODES::OK == result)
@@ -227,6 +234,7 @@ void GPSWorker::set_gps_vibro_(const GPSCommandData& command)
         {
             alarm_change_callback_(new_alarm);
         }
+        vibro_stater_.EnableAlarm(new_alarm);
         settings_.Save();
         send_ok_(command);
         return;

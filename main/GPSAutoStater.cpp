@@ -41,7 +41,7 @@ GPSDeviceStateForce* GPSAutoStater::default_force_()
 GPSDeviceState* GPSAutoStater::default_alarm_()
 {
     GPSAlarmSettings tmp;
-    return new GPSDeviceState(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::OFF), tmp.duration * 60UL * 1000UL);
+    return new GPSDeviceState(GPSDeviceStateSettings(GPS_DEVICE_WORK_MODE::OFF), tmp.GetDurationMs());
 }
 GPSDeviceBaseState* GPSAutoStater::default_standart_()
 {
