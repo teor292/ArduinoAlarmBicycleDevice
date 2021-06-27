@@ -18,7 +18,7 @@ enum class GPS_COMMANDS
     GET_GPS_FIX, //sms: get gps fix
     SET_GPS_VIBRO, //sms like: set gps vibro on/max/off [60-600/1m-10m] 
     GET_GPS_VIBRO, //sms: get gps vibro
-    SET_GPS_SMS_SEND, //sms like: set gps send sms me/phone 1800-86400/30m-1440m/1h-24h [age 5-3600/1m-60m/1h]
+    SET_GPS_SMS_SEND, //sms like: set gps send sms me/phone 300-86400/5m-1440m/1h-24h [age 5-3600/1m-60m/1h]
     GET_GPS_SMS_SEND, //sms like: get gps send sms
     SET_GPS_REMOVE_SMS_SEND, //sms like: set gps send sms remove me/phone
     // SET_GPS_SMS_ALARM, //sms like: set gps send sms alarm me/phone on/off

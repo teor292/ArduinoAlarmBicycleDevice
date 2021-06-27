@@ -224,7 +224,7 @@ enum class POWER_SAVING_MODES : uint8_t
     PSMCT = 0x1
 };
 
-struct UBX_CFG_PM2_BASE_ : UBX_Base
+struct PACKED UBX_CFG_PM2_BASE_ : UBX_Base
 {
     UBX_CFG_PM2_BASE_() 
         : UBX_Base{0x06, 0x3b, 44}
@@ -290,7 +290,7 @@ enum class LP_MODE : uint8_t
     POWER_SAVING = 1
 };
 
-struct UBX_CFG_RXM_BASE_ : UBX_Base
+struct PACKED UBX_CFG_RXM_BASE_ : UBX_Base
 {
     UBX_CFG_RXM_BASE_()
         : UBX_Base{0x06, 0x11, 2}
@@ -299,7 +299,7 @@ struct UBX_CFG_RXM_BASE_ : UBX_Base
     LP_MODE lpMode{LP_MODE::CONTINOUS};
 };
 
-struct UBX_CFG_REQUEST_RATE_BASE_ : UBX_Base
+struct PACKED UBX_CFG_REQUEST_RATE_BASE_ : UBX_Base
 {
     UBX_CFG_REQUEST_RATE_BASE_()
         : UBX_Base{0x06, 0x08, 0}
@@ -315,7 +315,7 @@ enum class TIME_REF : uint16_t
     Galileo_TIME = 4
 };
 
-struct UBX_CFG_RATE_BASE_ : UBX_Base
+struct PACKED UBX_CFG_RATE_BASE_ : UBX_Base
 {
     UBX_CFG_RATE_BASE_()
         : UBX_Base{0x06, 0x08, 6}
@@ -346,7 +346,7 @@ struct PACKED UBX_RXM_PMREQ_BASE_ : UBX_Base
 };
 
 //output message for check aknowledge of send message
-struct UBX_ACK_BASE_ : UBX_Base
+struct PACKED UBX_ACK_BASE_ : UBX_Base
 {
     UBX_ACK_BASE_()
         : UBX_Base{0x5, 0x0, 0x0}
@@ -381,7 +381,7 @@ union UBX_CFG_HELPER
 };
 
 //message for resettings, saving and loading config
-struct UBX_CFG_CFG_BASE_ : UBX_Base
+struct PACKED UBX_CFG_CFG_BASE_ : UBX_Base
 {
     UBX_CFG_CFG_BASE_()
         : UBX_Base{0x06, 0x09, 12}
@@ -403,7 +403,7 @@ enum class RESET_GPS_MODE : uint8_t
     CONTROLLED_GNSS_START = 0x9
 };
 
-struct UBX_CFG_RST_BASE_ : UBX_Base
+struct PACKED UBX_CFG_RST_BASE_ : UBX_Base
 {
     UBX_CFG_RST_BASE_()
         : UBX_Base{0x06, 0x04, 4}

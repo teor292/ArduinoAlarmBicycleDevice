@@ -7,6 +7,8 @@
 #include "GPSAbstractSender.h"
 #include <TinyGPS++.h>
 
+//this class helps send gps data
+//the sending period is counted from the last sending
 class GPSTimeWrapperSender
 {
     public:

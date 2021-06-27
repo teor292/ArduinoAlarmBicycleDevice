@@ -218,7 +218,7 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
     {
         return GPSCommandData{GPS_COMMANDS::INVALID};
     }
-    if (1800 > time || 86400 < time)
+    if (300 > time || 86400 < time)
     {
         return GPSCommandData{GPS_COMMANDS::INVALID};
     }

@@ -14,6 +14,10 @@ class AbstractFixCallable
         virtual bool IsValidGPS(uint32_t valid_period_time_ms) = 0;
 };
 
+//class for manual PSM mode
+//awake gps device every N time
+//The period of the next awakening depends on whether the coordinates were received. 
+//However, regardless of this, the device will still wake up with a N time period.
 class GPSManualPSM
 {
     public:

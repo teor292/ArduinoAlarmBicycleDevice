@@ -17,7 +17,7 @@ void GPSTimeWrapperSender::SetSettings(const SendSettingData& settings)
 void GPSTimeWrapperSender::Work()
 {
     auto current_time = millis();
-    if (current_time - last_send_time_ < settings_.GetSendTimeMs()) return;
+    if (0 != last_send_time_ && current_time - last_send_time_ < settings_.GetSendTimeMs()) return;
 
     if (gps_.location.age() > settings_.GetValidTimeMs()) return;
 

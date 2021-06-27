@@ -169,16 +169,21 @@ void GPSWorker::set_gps_send_sms_remove_(const GPSCommandData& command)
         return;
     }
     settings_.RemoveSendSettings(settings);
+    send_ok_(command);
 }
 
 void GPSWorker::get_gps_send_sms_(const GPSCommandData& command)
 {
     sms_.SetPhone(command.phone.phone);
-    createSafeString(tmp, 255);
+    createSafeString(tmp, 160);
     auto& sender_settings = settings_.GetSendSettings();
     for (auto &s : sender_settings)
     {
         s.ToString(tmp);
+    }
+    if (tmp.isEmpty())
+    {
+        tmp = F("No settings");
     }
     sms_.SendSms(tmp.c_str());
 }
