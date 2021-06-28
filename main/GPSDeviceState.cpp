@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include "header.h"
+#include "time_utils.h"
 
 GPSDeviceBaseState::GPSDeviceBaseState(const GPSDeviceStateSettings& mode)
     : mode_(mode)
@@ -46,7 +47,8 @@ GPSDeviceState::GPSDeviceState(const GPSDeviceStateSettings& mode, uint32_t dura
 bool GPSDeviceState::IsActive()
 {
     if (0 == last_alarm_time_) return false;
-    auto current_time = millis();
+    //auto current_time = millis();
+    auto current_time = time();
 
     return current_time < last_alarm_time_ + duration_;
 }
@@ -54,7 +56,8 @@ bool GPSDeviceState::IsActive()
 bool GPSDeviceState::Activate()
 {
     bool was_active = IsActive();
-    last_alarm_time_ = millis();
+    //last_alarm_time_ = millis();
+    last_alarm_time_ = time();
     return !was_active;
 }
 

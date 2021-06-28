@@ -1,5 +1,6 @@
 #include "BatteryChecker.h"
 #include <Arduino.h>
+#include "time_utils.h"
 
 BatteryChecker::BatteryChecker(BatteryReader& batter_reader)
     : reader_(batter_reader),
@@ -13,7 +14,8 @@ void BatteryChecker::AddToRealTime(unsigned long time)
 
 bool BatteryChecker::Check()
 {
-    unsigned long current_time = millis();
+    //unsigned long current_time = millis();
+    unsigned long current_time = time();
     //if current_time will be < last_time_
     //then current_time - last_time must whatever get time distance
     if (0 == last_time_

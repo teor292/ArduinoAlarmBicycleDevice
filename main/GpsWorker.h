@@ -5,7 +5,7 @@
 #if defined(GPS)
 
 
-#include "TinyGPS++.h"
+#include "TinyGPS_time.h"
 #include <Stream.h>
 #include "header.h"
 #include "GPSManualPSM.h"

@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include "header.h"
+#include "time_utils.h"
 
 #define VALID_FIX_TIME 600000UL
 #define TIME_ACK 600000UL
@@ -20,7 +21,8 @@ void GPSManualPSM::UpdateSettings(const GPSFixSettings& fix_settings)
         reset_force_();
     }
     fix_settings_ = fix_settings;
-    last_time_ = millis() - fix_settings_.UpdateTimeMS();
+    //last_time_ = millis() - fix_settings_.UpdateTimeMS();
+    last_time_ = time() - fix_settings_.UpdateTimeMS();
     sum_diff_force_time_ = 0;
 }
 
@@ -38,8 +40,9 @@ void GPSManualPSM::Work()
 
 void GPSManualPSM::force_check_start_()
 {
-    auto time = millis();
-    if (time - last_time_ > fix_settings_.UpdateTimeMS())
+    //auto current_time = millis();
+    auto current_time = time();
+    if (current_time - last_time_ > fix_settings_.UpdateTimeMS())
     {
         PRINTLN("BY TIME");
         sum_diff_force_time_ = 0;
@@ -47,7 +50,7 @@ void GPSManualPSM::force_check_start_()
         active_force_();
         return;
     }
-    if (0 != sum_diff_force_time_ && time - (force_activate_time_ + TIME_ACK) > get_time_sleep_on_fail_())
+    if (0 != sum_diff_force_time_ && current_time - (force_activate_time_ + TIME_ACK) > get_time_sleep_on_fail_())
     {
         PRINTLN("BY FIX");
         active_force_();
@@ -64,8 +67,9 @@ void GPSManualPSM::check_for_fix_()
         sum_diff_force_time_ = 0;
         return;
     }
-    auto time = millis();
-    if (time - force_activate_time_ > TIME_ACK)
+    //auto current_time = millis();
+    auto current_time = time();
+    if (current_time - force_activate_time_ > TIME_ACK)
     {
         PRINTLN("TIME ACK EXPIRED");
         reset_force_();
@@ -96,7 +100,8 @@ void GPSManualPSM::active_force_()
     }
     stater_.Force(GPS_STATER_FORCE::BY_SERVICE);
     force_activated_ = true;
-    force_activate_time_ = millis();
+    force_activate_time_ = time();
+    //force_activate_time_ = millis();
 }
 
 bool GPSManualPSM::is_active_() const

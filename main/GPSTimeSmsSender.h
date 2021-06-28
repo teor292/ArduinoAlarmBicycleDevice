@@ -6,7 +6,7 @@
 
 #include "GPSSmsSender.h"
 #include "GPSTimeWrapperSender.h"
-#include <TinyGPS++.h>
+#include "TinyGPS_time.h"
 
 class GPSTimeSmsSender
 {

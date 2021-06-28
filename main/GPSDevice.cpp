@@ -4,6 +4,7 @@
 
 #include "header.h"
 #include <Arduino.h>
+#include "time_utils.h"
 
 GPSDevice::GPSDevice(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCallback wait_callback)
     : stream_(gps_stream),
@@ -252,7 +253,8 @@ GPS_ERROR_CODES GPSDevice::set_off_mode_()
 void GPSDevice::wake_up_(int timeout)
 {
     if (!is_sleep_mode_) return;
-    auto current_time = millis();
+    //auto current_time = millis();
+    auto current_time = time();
     if (current_time - last_wake_time_ < 2000UL) return;
 
     PRINT("WAKEUP: ");
@@ -265,7 +267,8 @@ void GPSDevice::wake_up_(int timeout)
         wait_(millis);
     }
 
-    last_wake_time_ = millis();
+    //last_wake_time_ = millis();
+    last_wake_time_ = time();
 }
 
 

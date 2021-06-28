@@ -23,6 +23,7 @@
 #include "DefaultCommandPerformer.h"
 #include "SmsReader.h"
 #include "TextCommands.h"
+#include "SAMDLowPower.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -143,6 +144,10 @@ void setup()
   vibro_reader.AddVibroCallback(&vibro);
   #if defined(GPS)
   vibro_reader.AddVibroCallback(gps_worker.GetVibroStater());
+  #endif
+
+  #if defined(__SAMD21G18A__)
+  SAMDLowPower::Initialize();
   #endif
 
   //configure here because sim800l due to lack of amperage can
@@ -402,7 +407,8 @@ void loop()
 
     if (!SIM800.IsSleepMode()) return;
 
-    auto current_time = millis();
+    //auto current_time = millis();
+    auto current_time = time();
     if (current_time - last_enter_sleep_time < 5000) return;
     last_enter_sleep_time = current_time;
 

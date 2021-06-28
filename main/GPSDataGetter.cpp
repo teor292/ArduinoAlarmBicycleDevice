@@ -5,6 +5,7 @@
 
 #include <SafeString.h>
 #include "header.h"
+#include "time_utils.h"
 
 #define TIME_WAIT 600000UL
 #define TIME_VALID 60000UL
@@ -19,12 +20,14 @@ bool GPSDataGetter::AddToWait(const Phone& phone)
     if (-1 == index)
     {
         if (phones_.max_size() == phones_.size()) return false;
-        PhoneData phone_data{phone, millis()};
+        //PhoneData phone_data{phone, millis()};
+        PhoneData phone_data{phone, time()};
         phones_.push_back(phone_data);
         return true;
     }
     //update time
-    phones_[index].time = millis();
+    //phones_[index].time = millis();
+    phones_[index].time = time();
     return true;
 
 }
@@ -48,10 +51,11 @@ bool GPSDataGetter::RemoveFromWait(const Phone& phone)
 
 bool GPSDataGetter::IsActive() const
 {
-    auto time = millis();
+    //auto current_time = millis();
+    auto current_time = time();
     for (auto& p : phones_)
     {
-        if (phone_active_(p, time)) return true;
+        if (phone_active_(p, current_time)) return true;
     }
     return false;
 }
@@ -98,13 +102,14 @@ bool GPSDataGetter::exist_non_active_(uint32_t time) const
 void GPSDataGetter::remove_non_active_phones_()
 {
     if (phones_.empty()) return;
-    auto time = millis();
-    if (!exist_non_active_(time)) return;
+    //auto current_time = millis();
+    auto current_time = time();
+    if (!exist_non_active_(current_time)) return;
     PRINTLN("remove non active");
     Array<PhoneData, MAX_PHONES> active_phones;
     for (auto& p : phones_)
     {
-        if (phone_active_(p, time))
+        if (phone_active_(p, current_time))
         {
             active_phones.push_back(p);
         } else

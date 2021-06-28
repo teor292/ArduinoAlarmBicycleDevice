@@ -4,7 +4,7 @@
 
 #if defined(GPS)
 
-#include <TinyGPS++.h>
+#include "TinyGPS_time.h"
 #include <SafeString.h>
 
 class GPSTextCreator

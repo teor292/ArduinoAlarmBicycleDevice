@@ -1,6 +1,7 @@
 #include "ModeSerial.h"
 #include <Arduino.h>
 #include "header.h"
+#include "time_utils.h"
 
 #define TIME_SLEEP 4000 //SIM800L sleep after 5000 ms, but use 4000 for reliability
 
@@ -67,7 +68,8 @@ void ModeSerial::awake_if_sleep_()
 {
     if (WORK_MODE::STANDART == current_mode_) return;
 
-    auto current_time = millis();
+    //auto current_time = millis();
+    auto current_time = time();
     if (0 != last_time_
         && current_time < last_time_ + TIME_SLEEP) return;
     PRINTLN("awake");

@@ -5,7 +5,7 @@
 #if defined(GPS)
 
 #include "GPSAbstractSender.h"
-#include <TinyGPS++.h>
+#include "TinyGPS_time.h"
 
 //this class helps send gps data
 //the sending period is counted from the last sending

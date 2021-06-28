@@ -4,7 +4,7 @@
 
 #if defined(__SAMD21G18A__)
 
-#include "ArduinoLowPower.h"
+#include "SAMDLowPower.h"
 bool attached_interrupt = false;
 #else
 
@@ -30,14 +30,16 @@ void go_to_sleep(BatteryChecker& checker)
 
     if (!attached_interrupt)
     {
-      LowPower.attachInterruptWakeup(AWAKE_SIM800_PIN, int0_func, FALLING);
+      SAMDLowPower::SetAwakeCallback(AWAKE_SIM800_PIN, int0_func, FALLING);
+      //LowPower.attachInterruptWakeup(AWAKE_SIM800_PIN, int0_func, FALLING);
       attached_interrupt = true; 
     }
 
     for ( int i = 0; i < 60 && !f_extern_interrupt; ++i)
     {
-        LowPower.sleep(60000);
-        checker.AddToRealTime(60000);
+      SAMDLowPower::SleepFor(60000);
+        //LowPower.sleep(60000);
+        //checker.AddToRealTime(60000);
     }
 
     //digitalWrite(13,HIGH);

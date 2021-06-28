@@ -1,6 +1,7 @@
 #include "VibroReader.h"
 #include "header.h"
 #include <Arduino.h>
+#include "time_utils.h"
 
 VibroReader::VibroReader(int input)
     : VIBRO_INPUT(input)
@@ -25,7 +26,8 @@ void VibroReader::ReadChange()
 {
     if (!enabled_) return;
     //reset every one second
-    auto current_time = millis();
+    //auto current_time = millis();
+    auto current_time = time();
     if (current_time - last_millis_ > 1000)
     {
         last_millis_ = current_time;

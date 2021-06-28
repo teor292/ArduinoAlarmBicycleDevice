@@ -1,6 +1,7 @@
 #include "VibroStater.h"
 #include "header.h"
 #include <Arduino.h>
+#include "time_utils.h"
 
 #define ALARM_TIME 2 * 60 * 1000L //1 sms per two minutes
 
@@ -23,8 +24,8 @@ bool VibroStater::Update()
     if (!is_alarm_) return false;
     is_alarm_ = false;
 
-    auto current_time = millis();
-
+    //auto current_time = millis();
+    auto current_time = time();
     if (current_time > last_alarm_time_ + ALARM_TIME
             || 0 == last_alarm_time_)
     {
