@@ -17,6 +17,8 @@ namespace
     const char DEF[] = "def";
     const char SLEEP[] = "sleep";
     const char SENSITY[] = "sensity";
+    const char SIM[] = "sim";
+    const char CHIP[] = "chip";
 }
 
 
@@ -64,13 +66,42 @@ DefaultCommandData DefaultCommandParser::parse_set_(SafeString& sms_string, Phon
 DefaultCommandData DefaultCommandParser::parse_set_mode_(SafeString& sms_string, Phone& source_phone)
 {
     sms_string.substring(sms_string, sizeof(MODE));
+    if (sms_string.startsWith(SIM))
+    {
+        return parse_set_mode_sim_(sms_string, source_phone);
+    }
+    if (sms_string.startsWith(CHIP))
+    {
+        return parse_set_mode_chip_(sms_string, source_phone);
+    }
+
+    return DefaultCommandData{source_phone};
+}
+
+DefaultCommandData DefaultCommandParser::parse_set_mode_sim_(SafeString& sms_string, Phone& source_phone)
+{
+    sms_string.substring(sms_string, sizeof(SIM));
     if (sms_string == DEF)
     {
-        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE, source_phone, WORK_MODE::STANDART};
+        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE_SIM, source_phone, WORK_MODE::STANDART};
     }
     if (sms_string == SLEEP)
     {
-        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE, source_phone, WORK_MODE::SLEEP};
+        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE_SIM, source_phone, WORK_MODE::SLEEP};
+    }
+    return DefaultCommandData{source_phone};
+}
+
+DefaultCommandData DefaultCommandParser::parse_set_mode_chip_(SafeString& sms_string, Phone& source_phone)
+{
+    sms_string.substring(sms_string, sizeof(CHIP));
+    if (sms_string == DEF)
+    {
+        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE_CHIP, source_phone, WORK_MODE::STANDART};
+    }
+    if (sms_string == SLEEP)
+    {
+        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE_CHIP, source_phone, WORK_MODE::SLEEP};
     }
     return DefaultCommandData{source_phone};
 }

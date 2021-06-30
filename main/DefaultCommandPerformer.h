@@ -56,7 +56,8 @@ class DefaultCommandPerformer
         void get_alarm_(const DefaultCommandData& cmd);
         void set_alarm_sensity_(const DefaultCommandData& cmd);
         void get_alarm_sensity_(const DefaultCommandData& cmd);
-        void set_mode_(const DefaultCommandData& cmd);
+        void set_mode_sim_(const DefaultCommandData& cmd);
+        void set_mode_chip_(const DefaultCommandData& cmd);
         void get_mode_(const DefaultCommandData& cmd);
 
         static void add_zero_(SafeString& tmp, uint8_t value);

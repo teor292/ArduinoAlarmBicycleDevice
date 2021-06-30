@@ -1,5 +1,6 @@
 #include "DefaultCommandPerformer.h"
 #include "TextCommands.h"
+#include "ControllerSleeper.h"
 
 namespace
 {
@@ -75,8 +76,11 @@ void DefaultCommandPerformer::PerformCommand(const DefaultCommandData& cmd)
     case DEFAULT_COMMANDS::GET_ALARM_SENSITY:
         get_alarm_sensity_(cmd);
         break;
-    case DEFAULT_COMMANDS::SET_MODE:
-        set_mode_(cmd);
+    case DEFAULT_COMMANDS::SET_MODE_SIM:
+        set_mode_sim_(cmd);
+        break;
+    case DEFAULT_COMMANDS::SET_MODE_CHIP:
+        set_mode_chip_(cmd);
         break;
     case DEFAULT_COMMANDS::GET_MODE:
         get_mode_(cmd);
@@ -90,30 +94,42 @@ void DefaultCommandPerformer::PerformCommand(const DefaultCommandData& cmd)
 void DefaultCommandPerformer::get_mode_(const DefaultCommandData& cmd)
 {
     auto mode = sim800_.GetMode();
+    createSafeString(tmp, 30);
+    tmp = "SIM: ";
     if (WORK_MODE::SLEEP == mode)
     {
-        sms_.SendSms(SLEEP);
+        tmp += SLEEP;
     }
     else if (WORK_MODE::STANDART == mode)
     {
-        sms_.SendSms(DEF);
+        tmp += DEF;
     }
     else
     {
-        createSafeString(tmp, 15);
         tmp += UNKNOWN;
-        tmp += " mode";
-        sms_.SendSms(tmp.c_str());
     }
+    tmp += "\nCHIP: ";
+    if (WORK_MODE::SLEEP == mode)
+    {
+        tmp += SLEEP;
+    }
+    else if (WORK_MODE::STANDART == mode)
+    {
+        tmp += DEF;
+    }
+    else
+    {
+        tmp += UNKNOWN;
+    }
+    sms_.SendSms(tmp.c_str());
 }
 
-void DefaultCommandPerformer::set_mode_(const DefaultCommandData& cmd)
+void DefaultCommandPerformer::set_mode_sim_(const DefaultCommandData& cmd)
 {
     if (WORK_MODE::SLEEP == cmd.work_mode)
     {
         if (PerformSim800Command(sim800_, reader_, SLEEP_MODE_COMMAND))
         {
-            vibro_.EnableAlarm(false); //disable alarm in sleep mode
             sim800_.SetMode(WORK_MODE::SLEEP);
             sms_.SendSms(OK);
             last_enter_sleep_time_ = 0;
@@ -136,6 +152,18 @@ void DefaultCommandPerformer::set_mode_(const DefaultCommandData& cmd)
 
     sms_.SendSms(ERROR);
 
+}
+
+void DefaultCommandPerformer::set_mode_chip_(const DefaultCommandData& cmd)
+{
+    if (WORK_MODE::SLEEP == cmd.work_mode
+        || WORK_MODE::STANDART == cmd.work_mode)
+    {
+        ControllerSleeper::SetMode(cmd.work_mode);
+        sms_.SendSms(OK);
+        return;
+    }
+    sms_.SendSms(ERROR);
 }
 
 void DefaultCommandPerformer::get_alarm_sensity_(const DefaultCommandData& cmd)
