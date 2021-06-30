@@ -73,6 +73,17 @@ void GPSWorker::Work()
     sms_send_manager_.Work();
 }
 
+uint32_t GPSWorker::NextNeccessaryDiffTime(uint32_t current_time)
+{
+    if (0 == settings_.state_settings.fix_settings.update_time)
+    {
+        return ULONG_MAX;
+    }
+    //not sleep if not active and update_time is not zero
+    if (!manual_psm_.IsActive()) return 0;
+    return manual_psm_.NextDiffAwakeTime(current_time);
+}
+
 void GPSWorker::PerformCommand(const GPSCommandData& command)
 {
     switch (command.cmd)
@@ -328,9 +339,9 @@ void GPSWorker::NonUBXSymbol(uint8_t c)
     gps_.encode(c);
 }
 
-bool GPSWorker::IsValidGPS(uint32_t valid_period_time)
+bool GPSWorker::IsValidGPS(uint32_t valid_period_time_ms)
 {
-    return gps_.location.age() < valid_period_time;
+    return gps_.location.age() < valid_period_time_ms;
 }
 
 bool GPSWorker::CheckAge(uint32_t valid_time)

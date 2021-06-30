@@ -19,8 +19,12 @@
 #include "GPSTimeSmsSendManager.h"
 #include "vibro_header.h"
 #include "GPSVibroStater.h"
+#include "AbstractNextAwakeTimeGetter.h"
 
-class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, public AbstractGPSGetterCallable
+class GPSWorker :   public AbstractFixCallable, 
+                    public AbstractNonUBXCallable, 
+                    public AbstractGPSGetterCallable,
+                    public AbstractNextAwakeTimeGetter
 {
     public:
 
@@ -37,7 +41,7 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
 
         void PerformCommand(const GPSCommandData& command);
 
-        bool IsValidGPS(uint32_t valid_period_time) override;
+        bool IsValidGPS(uint32_t valid_period_time_ms) override;
 
         void NonUBXSymbol(uint8_t c) override;
 
@@ -48,6 +52,8 @@ class GPSWorker : public AbstractFixCallable, public AbstractNonUBXCallable, pub
         {
             return &vibro_stater_;
         }
+
+        uint32_t NextNeccessaryDiffTime(uint32_t current_time) override;
 
     protected:
 

@@ -26,9 +26,8 @@ void VibroReader::ReadChange()
 {
     if (!enabled_) return;
     //reset every one second
-    //auto current_time = millis();
     auto current_time = time();
-    if (current_time - last_millis_ > 1000)
+    if (current_time - last_millis_ > s_to_time(1))
     {
         last_millis_ = current_time;
         current_count_changes_ = 0;
@@ -56,4 +55,10 @@ void VibroReader::SetCountChanges(int count_changes_per_second)
 void VibroReader::EnableAlarm(bool enable)
 {
     enabled_ = enable;
+}
+
+uint32_t VibroReader::NextNeccessaryDiffTime(uint32_t current_time)
+{
+    if (!enabled_) return ULONG_MAX;
+    return 0;
 }

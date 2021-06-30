@@ -13,7 +13,9 @@ class SAMDLowPower
         static void Initialize();
         static void SetAwakeTimeCallback(InterruptCallback callback);
         static bool SetAwakeCallback(uint8_t pin, InterruptCallback callback, int mode);
+        static void UnsetAwakeCallback(uint8_t pin);
         static void SleepFor(uint32_t time);
+        static void SleepTo(uint32_t time);
         static void Sleep();
 
     private:

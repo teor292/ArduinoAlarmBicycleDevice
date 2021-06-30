@@ -7,7 +7,7 @@
 #include "header.h"
 #include "time_utils.h"
 
-#define TIME_WAIT 600000UL
+#define TIME_WAIT 600UL
 #define TIME_VALID 60000UL
 
 GPSDataGetter::GPSDataGetter(AbstractGPSGetterCallable* callback)
@@ -84,7 +84,7 @@ void GPSDataGetter::Reset()
 
 bool GPSDataGetter::phone_active_(const PhoneData& phone, uint32_t time) const
 {
-    return time - phone.time < TIME_WAIT;
+    return time - phone.time < s_to_time(TIME_WAIT);
 }
 
 bool GPSDataGetter::exist_non_active_(uint32_t time) const

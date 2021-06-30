@@ -20,7 +20,7 @@ void GPSTimeWrapperSender::Work()
 {
     //auto current_time = millis();
     auto current_time = time();
-    if (0 != last_send_time_ && current_time - last_send_time_ < settings_.GetSendTimeMs()) return;
+    if (0 != last_send_time_ && current_time - last_send_time_ < s_to_time(settings_.send_time)) return;
 
     if (gps_.location.age() > settings_.GetValidTimeMs()) return;
 

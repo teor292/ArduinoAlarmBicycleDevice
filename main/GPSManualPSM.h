@@ -27,6 +27,13 @@ class GPSManualPSM
 
         void Work();
 
+        uint32_t NextDiffAwakeTime(uint32_t current_time);
+
+        bool IsActive() const
+        {
+            return is_active_();
+        }
+
     protected:
 
         GPSAutoStater& stater_;

@@ -2,6 +2,7 @@
 
 
 #include "Array.h"
+#include "AbstractNextAwakeTimeGetter.h"
 
 class AbstractVibroCallback
 {
@@ -10,7 +11,9 @@ class AbstractVibroCallback
         virtual void Alarm(bool alarm) = 0;
 };
 
-class VibroReader
+//inherit this class from AbstractNextAwakeTimeGetter for ControllerSleep logic:
+//if alarm is enabled -> do not sleep
+class VibroReader : public AbstractNextAwakeTimeGetter
 {
     public:
 
@@ -31,6 +34,8 @@ class VibroReader
         } 
 
         void EnableAlarm(bool enable);
+
+        uint32_t NextNeccessaryDiffTime(uint32_t current_time) override;
 
     private:
 

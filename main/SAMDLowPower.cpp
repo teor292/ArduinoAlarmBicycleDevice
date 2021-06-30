@@ -18,17 +18,26 @@ void SAMDLowPower::SetAwakeTimeCallback(InterruptCallback callback)
 
 bool SAMDLowPower::SetAwakeCallback(uint8_t pin, InterruptCallback callback, int mode)
 {
-    EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
-	if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI)
-    		return false;
+     EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
+	 if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI)
+	 	return false;
 
 	//pinMode(pin, INPUT_PULLUP);
 	attachInterrupt(pin, callback, mode);
 
 	// Enable wakeup capability on pin in case being used during sleep
-	EIC->WAKEUP.reg |= (1 << in);
+	//this is done in attachInterrupt
+	//EIC->WAKEUP.reg |= (1 << in);
 
     return true;
+}
+
+void SAMDLowPower::UnsetAwakeCallback(uint8_t pin)
+{
+	EExt_Interrupts in = g_APinDescription[pin].ulExtInt;
+	if (in == NOT_AN_INTERRUPT || in == EXTERNAL_INT_NMI) return;
+
+	detachInterrupt(pin);
 }
 
 void SAMDLowPower::SleepFor(uint32_t time)
@@ -38,7 +47,13 @@ void SAMDLowPower::SleepFor(uint32_t time)
     RTCMode0::SetIntTime(tm);
 
     Sleep();
-    
+}
+
+void SAMDLowPower::SleepTo(uint32_t time)
+{
+    RTCMode0::SetIntTime(time);
+
+    Sleep();   
 }
 
 //copied from ArduinoLowPower

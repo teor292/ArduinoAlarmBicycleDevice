@@ -19,7 +19,7 @@ bool BatteryChecker::Check()
     //if current_time will be < last_time_
     //then current_time - last_time must whatever get time distance
     if (0 == last_time_
-        || current_time - last_time_ > TIME_BATTERY_CHECK)
+        || current_time - last_time_ > s_to_time(TIME_BATTERY_CHECK))
     {
         last_time_ = current_time;
         return true;
@@ -40,4 +40,28 @@ bool BatteryChecker::Update()
 const char * BatteryChecker::GetData() const
 {
     return reader_.GetData();
+}
+
+uint32_t BatteryChecker::NextNeccessaryDiffTime(uint32_t current_time)
+{
+    uint32_t next_time = last_time_ + s_to_time(TIME_BATTERY_CHECK);
+
+    //current_time overflow
+    if (current_time < last_time_)
+    {
+        //next_time overflow
+        if (next_time < last_time_)
+        {
+            if (next_time < current_time) return 0; //next time is less than current_time
+            return next_time - current_time;
+        }
+        
+        //current_time overflow and next_time is not overflow
+        // -> next_time is less than current_time
+        return 0;
+    }
+
+    //if next_time overflow or not overflow and current_time is not
+    //-> do diff, it's must be ok
+    return next_time - current_time;
 }

@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include "time_utils.h"
 
-#define ALARM_TIME 2 * 60 * 1000L //1 sms per two minutes
+#define ALARM_TIME 2 * 60UL //1 sms per two minutes
 
 VibroStater::VibroStater(VibroAlarmChangeCallback callback)
     : 
@@ -24,10 +24,9 @@ bool VibroStater::Update()
     if (!is_alarm_) return false;
     is_alarm_ = false;
 
-    //auto current_time = millis();
     auto current_time = time();
-    if (current_time > last_alarm_time_ + ALARM_TIME
-            || 0 == last_alarm_time_)
+    if (0 == last_alarm_time_
+        || current_time -  last_alarm_time_ > s_to_time(ALARM_TIME))
     {
         last_alarm_time_ = current_time;
         return true;

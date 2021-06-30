@@ -255,7 +255,7 @@ void GPSDevice::wake_up_(int timeout)
     if (!is_sleep_mode_) return;
     //auto current_time = millis();
     auto current_time = time();
-    if (current_time - last_wake_time_ < 2000UL) return;
+    if (current_time - last_wake_time_ < s_to_time(2)) return;
 
     PRINT("WAKEUP: ");
     PRINTLN(timeout);

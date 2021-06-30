@@ -41,7 +41,7 @@ void GPSDeviceBaseState::SetMode(const GPSDeviceStateSettings& mode)
 
 GPSDeviceState::GPSDeviceState(const GPSDeviceStateSettings& mode, uint32_t duration)  
     : GPSDeviceBaseState(mode),
-    duration_(duration)
+    duration_(ms_to_time(duration))
 {}
     
 bool GPSDeviceState::IsActive()
@@ -70,7 +70,7 @@ bool GPSDeviceState::ResetActive()
 
 void GPSDeviceState::SetDuration(uint32_t duration)
 {
-    duration_ = duration;
+    duration_ = ms_to_time(duration);
     PRINT("Duration: ");
     PRINTLN(duration);
 }

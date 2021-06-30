@@ -54,7 +54,7 @@ void RTCMode0::Initialize()
 
     uint16_t tmp_reg = 0;
     tmp_reg |= RTC_MODE0_CTRL_MODE_COUNT32; // set clock operating mode
-    tmp_reg |= RTC_MODE0_CTRL_PRESCALER_DIV128; // set prescaler for MODE0
+    tmp_reg |= RTC_MODE0_CTRL_PRESCALER_DIV256; // set prescaler for MODE0
     tmp_reg &= ~RTC_MODE0_CTRL_MATCHCLR; // disable clear on match
 
     RTC->MODE0.CTRL.reg = tmp_reg;
@@ -67,7 +67,7 @@ void RTCMode0::Initialize()
     NVIC_SetPriority(RTC_IRQn, 0x00);
 
     //set max value to compare by default
-    //this value will be reached after 15 years with DIV128 prescaler
+    //this value will be reached after 30 years with DIV256 prescaler
     RTC->MODE0.COMP[0].bit.COMP = 0xFFFFFFFF;
     while (is_sync_rtc());
 
@@ -88,11 +88,7 @@ void RTCMode0::Initialize()
 
 void RTCMode0::SetIntCallback(InterruptCallback callback)
 {
-  //global disable interruptr
-  __disable_irq();
-  int_callback = callback;
-  //global enable interrupts
-  __enable_irq();
+    int_callback = callback;
 }
 
 uint32_t RTCMode0::Time()
@@ -101,13 +97,14 @@ uint32_t RTCMode0::Time()
     while (is_sync_rtc());
     auto value = RTC->MODE0.COUNT.bit.COUNT;
     //Serial.println(value);
-    return (value * 1000) >> 3;
+    //return (value * 1000) >> 3;
+    return value;
 }
 
  void RTCMode0::SetIntTime(uint32_t time)
  {
-    time <<= 3;
-    time /= 1000;
+    //time <<= 3;
+    //time /= 1000;
 
     PRINTLN(time);
 

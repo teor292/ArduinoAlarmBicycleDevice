@@ -24,6 +24,7 @@
 #include "SmsReader.h"
 #include "TextCommands.h"
 #include "SAMDLowPower.h"
+#include "ControllerSleeper.h"
 
 //#define SIM800_INITIALIZATION
 
@@ -150,6 +151,12 @@ void setup()
   SAMDLowPower::Initialize();
   #endif
 
+  ControllerSleeper::AddTimeGetter(&battery_checker);
+  #if defined(GPS)
+  ControllerSleeper::AddTimeGetter(&gps_worker);
+  #endif
+  ControllerSleeper::AddTimeGetter(&vibro_reader);
+
   //configure here because sim800l due to lack of amperage can
   //reboot while initialization if D2 (INT0) in in default mode
   pinMode(AWAKE_SIM800_PIN, INPUT); 
@@ -251,6 +258,13 @@ void setup()
   while (!Serial1);
   gps_worker.Initialize();
   #endif
+
+
+  #if defined(__SAMD21G18A__)
+  SAMDLowPower::SetAwakeCallback(AWAKE_SIM800_PIN, int0_func, FALLING);
+  #else
+  attachInterrupt(0, int0_func, FALLING);
+  #endif 
 }
 
 void wait_for_ok();
@@ -344,11 +358,11 @@ void clear_buffer()
 }
 
 void do_vibro()
-{
+{  
   vibro_reader.ReadChange();
-  if (!adminer.IsEmpty()
-    && !SIM800.IsSleepMode()
-    && vibro.Update())
+  if (!f_extern_interrupt
+    && vibro.Update()
+    && !adminer.IsEmpty())
   {
       if (!set_sms_mode(SILINCE_MODE))
       {
@@ -382,7 +396,29 @@ void do_battery()
   }
 }
 
+bool read_sim800_data()
+{
+    auto last_available_ms = millis();
+    while (millis() - last_available_ms < 500)
+    {
+      bool was_available = false;
+      if (SIM800.available())
+      {
+        char c = (char)SIM800.read();
+        sms_reader.Write(c);
+        was_available = true;
+        PRINT(c);
+        if (sms_reader.IsFilled()) return true;
+      }
 
+      wait_callback_for_gps_read();
+      if (was_available)
+      {
+        last_available_ms = millis();
+      }
+    }
+    return false;
+}
 
 void loop() 
 {
@@ -392,27 +428,29 @@ void loop()
     f_extern_interrupt = false;
     was_in_sleep_mode = false;
 
-
-
-    //call check battery here
-    //because it is neccessary check battery
+    //call do_vibro && battery here
+    //because it is neccessary do it
     //when f_extern_interrupt is 0
     //microcontroller can awake not by timer
-    //but by sms, so it must read sms before check battery
+    //but by sms, so it must read sms before do other work
+    do_vibro();
+
     do_battery();
 
     #if defined(GPS)
     gps_worker.Work();
     #endif
 
-    if (!SIM800.IsSleepMode()) return;
+    //if (!SIM800.IsSleepMode()) return;
+    if (!ControllerSleeper::IsSleepMode()) return;
 
     //auto current_time = millis();
     auto current_time = time();
-    if (current_time - last_enter_sleep_time < 5000) return;
+    if (current_time - last_enter_sleep_time < s_to_time(5)) return;
     last_enter_sleep_time = current_time;
 
-    go_to_sleep(battery_checker);
+    if (!ControllerSleeper::Sleep(battery_checker)) return;
+
 
     //reset last awake time because millis don't work while sleep
     SIM800.ResetTime();
@@ -424,14 +462,16 @@ void loop()
     PRINTLN(F("AWAKE"));
   );
 
-  do_vibro();
 
-  if (SIM800.available())
+
+  //suppose that interrupt comes early than data in buffer
+  if (f_extern_interrupt || SIM800.available())
   {
-    char c = (char)SIM800.read();
-    sms_reader.Write(c);
-    PRINT(c);
-    if (!sms_reader.IsFilled()) return;
+    //read sms here
+    //If read symbol by symbol in loop() 
+    //-> vibro or battery can occured -> lost sms
+    if (!read_sim800_data()) return;
+    
     auto result = sms_reader.Work();
     if (result.IsEmpty()) return;
     //wait for full awake before send data

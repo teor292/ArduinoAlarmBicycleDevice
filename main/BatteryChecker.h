@@ -1,11 +1,12 @@
 #pragma once
 
 #include "BatteryReader.h"
+#include "AbstractNextAwakeTimeGetter.h"
 
-#define TIME_BATTERY_CHECK 3600 * 2 * 1000L
+#define TIME_BATTERY_CHECK 3600 * 2UL
 #define MINIMUM_SEND_BATTERY 30 //%
 
-class BatteryChecker
+class BatteryChecker : public AbstractNextAwakeTimeGetter
 {
     public:
         
@@ -19,6 +20,8 @@ class BatteryChecker
         void AddToRealTime(unsigned long time);
 
         const char* GetData() const;
+
+        uint32_t NextNeccessaryDiffTime(uint32_t current_time) override;
 
     private:
 
