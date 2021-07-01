@@ -109,6 +109,7 @@ void DefaultCommandPerformer::get_mode_(const DefaultCommandData& cmd)
         tmp += UNKNOWN;
     }
     tmp += "\nCHIP: ";
+    mode = ControllerSleeper::GetMode();
     if (WORK_MODE::SLEEP == mode)
     {
         tmp += SLEEP;

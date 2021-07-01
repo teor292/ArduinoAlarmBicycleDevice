@@ -96,16 +96,11 @@ uint32_t RTCMode0::Time()
     RTC->MODE0.READREQ.reg = RTC_READREQ_RREQ;
     while (is_sync_rtc());
     auto value = RTC->MODE0.COUNT.bit.COUNT;
-    //Serial.println(value);
-    //return (value * 1000) >> 3;
     return value;
 }
 
  void RTCMode0::SetIntTime(uint32_t time)
  {
-    //time <<= 3;
-    //time /= 1000;
-
     PRINTLN(time);
 
 

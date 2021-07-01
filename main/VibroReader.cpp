@@ -55,6 +55,7 @@ void VibroReader::SetCountChanges(int count_changes_per_second)
 void VibroReader::EnableAlarm(bool enable)
 {
     enabled_ = enable;
+    current_state_ = static_cast<unsigned char>(digitalRead(VIBRO_INPUT));
 }
 
 uint32_t VibroReader::NextNeccessaryDiffTime(uint32_t current_time)

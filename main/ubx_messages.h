@@ -6,7 +6,7 @@
 
 #define PACKED __attribute__ ((packed))
 
-struct UBX_Base
+struct PACKED UBX_Base
 {
     UBX_Base(uint8_t clss, uint8_t id, uint16_t length = 0)
         : clss{clss},
@@ -361,7 +361,7 @@ struct PACKED UBX_ACK_BASE_ : UBX_Base
     }
 };
 
-union UBX_CFG_HELPER
+union PACKED UBX_CFG_HELPER
 {
     uint32_t mask{0};
     struct

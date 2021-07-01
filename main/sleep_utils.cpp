@@ -4,7 +4,8 @@
 #if defined(__SAMD21G18A__)
 
 #include "SAMDLowPower.h"
-
+//#include "ArduinoLowPower.h"
+//bool attached_interrupt = false;
 #else
 
 #include "LowPower.h"
@@ -24,14 +25,17 @@ void go_to_sleep(BatteryChecker& checker, uint32_t current_time, uint32_t sleep_
 {
     #if defined(__SAMD21G18A__)
 
-    //  pinMode(13,OUTPUT);  //led RX
-   //  digitalWrite(13,LOW);
+
     if (f_extern_interrupt) return;
+
+
+     //pinMode(13,OUTPUT);  //led RX
+    // digitalWrite(13,LOW);
+
     //if int occures after above line and before sleep -> it will be ignored
     SAMDLowPower::SleepTo(current_time + sleep_for_time);
 
-
-    //digitalWrite(13,HIGH);
+   // digitalWrite(13,HIGH);
 
     #else
 

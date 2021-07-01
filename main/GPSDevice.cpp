@@ -6,6 +6,8 @@
 #include <Arduino.h>
 #include "time_utils.h"
 
+#define DEFAULT_DEVICE_RATE 1000
+
 GPSDevice::GPSDevice(Stream& gps_stream, NonUbxCallback non_ubx_callback, WaitCallback wait_callback)
     : stream_(gps_stream),
     non_ubx_callback_(non_ubx_callback),
@@ -20,6 +22,12 @@ void GPSDevice::Initialize()
     is_sleep_mode_ = true;
     wake_up_();
     is_sleep_mode_ = !GPS_OK(set_mode_(GPS_DEVICE_WORK_MODE::CONTINOUS));
+
+    //set default rate due to unknown current rate
+    UBX_CFG_RATE rate;
+    rate.message.measRate = DEFAULT_DEVICE_RATE;  
+    set_rate_(rate);
+
     initialized_ = true;
 }
 
@@ -32,6 +40,7 @@ GPS_ERROR_CODES GPSDevice::SetModeSettings(UBX_CFG_PM2& settings)
     auto result = send_message_(settings);
     //currently do not save config:
     //for every new mode settings of mode must be set previously
+    //and mode will be save when it will be set
     return result;
     //if (GPS_ERROR_CODES::OK != result) return result;
     
@@ -46,19 +55,25 @@ GPS_ERROR_CODES GPSDevice::SetRate(UBX_CFG_RATE& rate)
     PRINTLN("SetRate");
     Initialize();
     
+    return set_rate_(rate);
+}
+
+GPS_ERROR_CODES GPSDevice::set_rate_(UBX_CFG_RATE& rate)
+{
+    PRINTLN("set_rate_");
     //1. Send message by default alg
     auto result = send_message_(rate);
     if (GPS_OK(result))
     {
         current_rate_ = rate.message.measRate;
     }
-    //if (!GPS_OK(result)) return result;
-    return result;
-    
+    if (!GPS_OK(result)) return result;
+
     //2. Write save settings message
-    //UBX_CFG_CFG save_cfg;
-    //save_cfg.message.saveMask.navConf = 1;
-    //return send_message_no_wait_(save_cfg);
+    //must save rate because after sleep mode of PSMOO it is in default rate (1000) and continous mode
+    UBX_CFG_CFG save_cfg;
+    save_cfg.message.saveMask.navConf = 1;
+    return send_message_(save_cfg);
 }
 
 GPS_ERROR_CODES GPSDevice::SetMode(GPS_DEVICE_WORK_MODE mode)
@@ -97,6 +112,7 @@ GPS_ERROR_CODES GPSDevice::ResetSettings()
     if (!GPS_OK(result)) return result;
 
     is_sleep_mode_ = false;
+    current_rate_ = DEFAULT_DEVICE_RATE;
 
     return result;
 }
@@ -104,29 +120,24 @@ GPS_ERROR_CODES GPSDevice::ResetSettings()
 GPS_ERROR_CODES GPSDevice::ResetDevice()
 {
     PRINTLN("REset device");
-    bool was_initialized = initialized_;
     Initialize();
     //there are many message $GNTXT in NMEA output when reset and awake, must find at least one of it
     //BUT: don't know state of gps module
     //if sleep -> we must wait until all $GNTXT comes
     //so
     //1. if sleep -> go to continous mode && wait for 3 seconds (all $GNTXT comes)
-    //2. if not in sleep but was not initialized -> wait for 3 seconds for all $GNTXT (was in OFF mode)
-    //3. Run reset
-    //4. wait for $GNTXT
-    //5. if get -> ok, else -> run reset again
+    //2. Run reset
+    //3. wait for $GNTXT
+    //4. if get -> ok, else -> run reset again
     millisDelay mil;
-    if (is_sleep_mode_)
+    //Resetting the device is not done in order to think about the state of the device.
+    //if (is_sleep_mode_)
     {
         PRINTLN("CALL CONTINOUS");
+        //must set continous mode and save configuration
         auto code = set_continous_mode_();
         PRINT("CONT RESULT: ");
         PRINTLN((int)code);
-        mil.start(3000);
-        wait_(mil);
-    }
-    else if (!was_initialized)
-    {
         mil.start(3000);
         wait_(mil);
     }
@@ -166,18 +177,26 @@ GPS_ERROR_CODES GPSDevice::ResetDevice()
 
     if (enabled) return GPS_ERROR_CODES::UBX_READ_TIMEOUT;
 
-    //due to not save settings -> device must be in continous mode
-    is_sleep_mode_ = false;
+    //run reinitialization
+    initialized_ = false;
+    Initialize();
 
     return GPS_ERROR_CODES::OK;
 }
 
 GPS_ERROR_CODES GPSDevice::set_continous_mode_()
 {
-    PRINTLN("CONT_MODE");
+    PRINTLN(F("CONT_MODE"));
     auto result = send_rxm_msg_(LP_MODE::CONTINOUS);
     //only if ok set is_sleep_mode_ to false
     is_sleep_mode_ = !GPS_OK(result);
+
+    if (!GPS_OK(result)) return result;
+    PRINTLN(F("CONT SAVE"));
+    //save settings message
+    UBX_CFG_CFG save_cfg;
+    save_cfg.message.saveMask.rxmConf = 1;
+    result = send_message_(save_cfg);
     return result;
 }
 
@@ -188,7 +207,13 @@ GPS_ERROR_CODES GPSDevice::set_ps_mode_()
     //If failed and set is_sleep_mode_ to true then everything will be ok,
     //but additional delay 500 ms
     is_sleep_mode_ = true;
-    return send_rxm_msg_(LP_MODE::POWER_SAVING);
+    auto result = send_rxm_msg_(LP_MODE::POWER_SAVING);
+    if (!GPS_OK(result)) return result;
+    
+    //save settings message
+    UBX_CFG_CFG save_cfg;
+    save_cfg.message.saveMask.rxmConf = 1;
+    return send_message_(save_cfg);
 }
 
 GPS_ERROR_CODES GPSDevice::set_off_mode_()
@@ -202,7 +227,7 @@ GPS_ERROR_CODES GPSDevice::set_off_mode_()
     {
         UBX_CFG_RATE rate;
         rate.message.measRate = 1000;
-        SetRate(rate); //not check result. If failed -> wait for previous rate time
+        set_rate_(rate); //not check result. If failed -> wait for previous rate time
     }
 
 
@@ -246,7 +271,8 @@ GPS_ERROR_CODES GPSDevice::set_off_mode_()
         return GPS_ERROR_CODES::UBX_READ_TIMEOUT;
     }
     is_sleep_mode_ = true;
-    initialized_ = false;
+    //It has no sense
+    //initialized_ = false;
     return GPS_ERROR_CODES::OK;
 }
 

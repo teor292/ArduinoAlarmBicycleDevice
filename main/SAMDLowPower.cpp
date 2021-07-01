@@ -8,7 +8,6 @@
 void SAMDLowPower::Initialize()
 {
     RTCMode0::Initialize();
-    configure_gclk6_();
 }
 
 void SAMDLowPower::SetAwakeTimeCallback(InterruptCallback callback)
@@ -24,10 +23,11 @@ bool SAMDLowPower::SetAwakeCallback(uint8_t pin, InterruptCallback callback, int
 
 	//pinMode(pin, INPUT_PULLUP);
 	attachInterrupt(pin, callback, mode);
-
+	//don't know why need reconfigure GCLK after each interrupt
+	//but if configure in initialize and not here -> SAMD not awake by interrupt
+	configure_gclk6_();
 	// Enable wakeup capability on pin in case being used during sleep
-	//this is done in attachInterrupt
-	//EIC->WAKEUP.reg |= (1 << in);
+	EIC->WAKEUP.reg |= (1 << in);
 
     return true;
 }

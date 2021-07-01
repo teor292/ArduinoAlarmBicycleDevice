@@ -71,7 +71,7 @@ void ModeSerial::awake_if_sleep_()
     //auto current_time = millis();
     auto current_time = time();
     if (0 != last_time_
-        && current_time < last_time_ + ms_to_time(TIME_SLEEP)) return;
+        && current_time - last_time_ < ms_to_time(TIME_SLEEP)) return;
     PRINTLN("awake");
     CUART::write(' ');
     delay(150); //100 ms for awake, use 150 for reliability

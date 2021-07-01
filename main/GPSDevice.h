@@ -42,7 +42,7 @@ class GPSDevice
 
         uint32_t last_wake_time_{0};
         //for off software mode
-        uint16_t current_rate_{1000};
+        uint16_t current_rate_{0};
 
         static const int DEFAULT_TIMEOUT = 1200;
         static const int ATTEMPT_SEND_COUNT = 3;
@@ -61,9 +61,12 @@ class GPSDevice
 
         GPS_ERROR_CODES set_mode_(GPS_DEVICE_WORK_MODE mode);
 
+        GPS_ERROR_CODES set_rate_(UBX_CFG_RATE& rate);
+
         template<typename T>
         GPS_ERROR_CODES send_message_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
+            PRINTLN(F("SEND MESSAGE"));
             wake_up_();
 
             //Send message && read ACK
@@ -73,6 +76,7 @@ class GPSDevice
         template<typename T>
         GPS_ERROR_CODES send_message_no_wait_(T& message, int timeout = DEFAULT_TIMEOUT)
         {
+            PRINTLN(F("SEND MESSAGE NO WAIT"));
             //when get gps data vit NMEA protocol
             //UBX protocol not working!
             //so when send message -> device ignores it, header not found, must resend

@@ -95,7 +95,7 @@ GPS_ERROR_CODES GPSAutoStater::ResetDevice()
     auto result = device_.ResetDevice();
     if (!GPS_OK(result)) return result;
 
-    reset_stater_settings_();
+    last_state_ = GPSDeviceStateSettings{GPS_DEVICE_WORK_MODE::CONTINOUS, 1};
 
     return GPS_ERROR_CODES::OK;
 }
@@ -217,6 +217,7 @@ GPS_ERROR_CODES GPSAutoStater::set_psmct_mode_(const GPSDeviceStateSettings& mod
     {
         return GPS_ERROR_CODES::INVALID_ARGUMENT;
     }
+
     UBX_CFG_PM2 conf;
 
 

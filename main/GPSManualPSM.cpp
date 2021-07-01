@@ -110,7 +110,7 @@ void GPSManualPSM::check_for_fix_()
     }
     //auto current_time = millis();
     auto current_time = time();
-    if (current_time - force_activate_time_ > TIME_ACK_S)
+    if (current_time - force_activate_time_ > s_to_time(TIME_ACK_S))
     {
         PRINTLN("TIME ACK EXPIRED");
         reset_force_();

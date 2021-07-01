@@ -165,8 +165,11 @@ void setup()
   Serial.begin(GPSBaud); 
 
   #if defined(__SAMD21G18A__)
-  //wait initialization
-  while (!Serial);           
+  //initialization of usb serial
+  for (int i = 0; i < 10 && !Serial1; ++i)
+  {
+    delay(100);
+  }        
   #endif
   
   PRINTLN(F("Start!"));
@@ -255,7 +258,10 @@ void setup()
 
   #if defined(GPS)
   Serial1.begin(9600);
-  while (!Serial1);
+  for (int i = 0; i < 50 && !Serial1; ++i)
+  {
+    delay(100);
+  }
   gps_worker.Initialize();
   #endif
 
@@ -399,7 +405,7 @@ void do_battery()
 bool read_sim800_data()
 {
     auto last_available_ms = millis();
-    while (millis() - last_available_ms < 500)
+    while (millis() - last_available_ms < 300)
     {
       bool was_available = false;
       if (SIM800.available())
@@ -441,15 +447,14 @@ void loop()
     gps_worker.Work();
     #endif
 
-    //if (!SIM800.IsSleepMode()) return;
     if (!ControllerSleeper::IsSleepMode()) return;
 
-    //auto current_time = millis();
     auto current_time = time();
     if (current_time - last_enter_sleep_time < s_to_time(5)) return;
-    last_enter_sleep_time = current_time;
 
     if (!ControllerSleeper::Sleep(battery_checker)) return;
+
+    last_enter_sleep_time = time();
 
 
     //reset last awake time because millis don't work while sleep
