@@ -27,7 +27,7 @@ void Sms::SendSms(const char *text)
     if (send_sms_one_(text)) return;
   }
 }
-bool Sms::sens_sms_one_(const char *text)
+bool Sms::send_sms_one_(const char *text)
 {
     static const char AT_CMGS[] = "AT+CMGS=";
    // int count_new_lines = count_new_lines_plus_one(text);

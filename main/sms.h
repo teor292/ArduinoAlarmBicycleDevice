@@ -29,5 +29,5 @@ class Sms
 
         Phone phone_;
 
-        bool sens_sms_one_(const char *text);
+        bool send_sms_one_(const char *text);
 };
