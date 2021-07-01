@@ -51,6 +51,21 @@ void GPSTimeSmsSendManager::Work()
     }
 }
 
+uint32_t GPSTimeSmsSendManager::GetNextDiffTime(uint32_t current_time)
+{
+    uint32_t min_diff_time = ULONG_MAX;
+    for (auto &sender : senders_)
+    {
+        auto current_diff = sender->GetNextDiffTime(current_time);
+        if (0 == current_diff) return 0;
+        if (current_diff < min_diff_time)
+        {
+            min_diff_time = current_diff;
+        }
+    }
+    return min_diff_time;
+}
+
 int GPSTimeSmsSendManager::find_sender_(const SendSettings& settings) const
 {
     auto cnt = senders_.size();

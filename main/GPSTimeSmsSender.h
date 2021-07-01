@@ -27,6 +27,11 @@ class GPSTimeSmsSender
         {
             return sender_ == phone;
         }
+
+        uint32_t GetNextDiffTime(uint32_t current_time)
+        {
+            return worker_.GetNextDiffTime(current_time);
+        }
     
     protected:
 

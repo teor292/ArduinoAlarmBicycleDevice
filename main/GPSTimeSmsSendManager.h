@@ -24,6 +24,8 @@ class GPSTimeSmsSendManager : public AbstractGPSTimeSendManager
 
         void Work() override;
 
+        uint32_t GetNextDiffTime(uint32_t current_time);
+
     
     protected:
 

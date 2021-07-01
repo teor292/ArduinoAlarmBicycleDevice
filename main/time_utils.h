@@ -71,3 +71,6 @@ inline uint32_t ms_to_time(uint32_t s)
     #endif
 
 }
+
+//A function for determining how long the microcontroller should wake up from sleep mode.
+uint32_t get_next_diff_time(uint32_t last_time, uint32_t diff_next_time, uint32_t current_time);

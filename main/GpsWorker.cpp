@@ -75,13 +75,15 @@ void GPSWorker::Work()
 
 uint32_t GPSWorker::NextNeccessaryDiffTime(uint32_t current_time)
 {
-    if (0 == settings_.state_settings.fix_settings.update_time)
-    {
-        return ULONG_MAX;
-    }
-    //not sleep if not active and update_time is not zero
-    if (!manual_psm_.IsActive()) return 0;
-    return manual_psm_.NextDiffAwakeTime(current_time);
+    //if current state is not off -> do not sleep
+    //although gps device can sleep in PSMOO mode but
+    //currently awake microcontroller from gps data is not implemented
+    if (GPS_DEVICE_WORK_MODE::OFF != auto_stater_.GetMode()) return 0;
+
+    //calculate diff time with considering sms send time
+    auto diff_time_by_sms_send = sms_send_manager_.GetNextDiffTime(current_time);
+    auto psm_diff_time = manual_psm_.NextDiffAwakeTime(current_time);
+    return diff_time_by_sms_send < psm_diff_time ? diff_time_by_sms_send : psm_diff_time;
 }
 
 void GPSWorker::PerformCommand(const GPSCommandData& command)

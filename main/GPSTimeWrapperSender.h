@@ -18,6 +18,7 @@ class GPSTimeWrapperSender
 
         void Work();
 
+        uint32_t GetNextDiffTime(uint32_t current_time);
 
     protected:
 
@@ -25,6 +26,12 @@ class GPSTimeWrapperSender
         TinyGPSPlus& gps_;
         SendSettingData settings_;
         uint32_t last_send_time_{0};
+        //This variable is needed to determine 
+        //when the microcontroller should exit the standby mode 
+        //when manual PSM of the gps device is active.
+        //if false -> time of this sender must considered
+        //if true -> last gps data is invalid, mode is PSM -> do not cosidered
+        bool is_last_check_non_valid_{false};
 
     
 };

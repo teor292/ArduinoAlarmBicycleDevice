@@ -34,6 +34,11 @@ class GPSAutoStater
         GPS_ERROR_CODES Force(GPS_STATER_FORCE force);
 
         GPS_ERROR_CODES ResetForce(GPS_STATER_FORCE force);
+
+        GPS_DEVICE_WORK_MODE GetMode() const
+        {
+            return last_state_.GetMode();
+        }
     
     protected:
         GPSDevice device_;
