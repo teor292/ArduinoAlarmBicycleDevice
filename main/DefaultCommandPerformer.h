@@ -59,6 +59,11 @@ class DefaultCommandPerformer
         void set_mode_sim_(const DefaultCommandData& cmd);
         void set_mode_chip_(const DefaultCommandData& cmd);
         void get_mode_(const DefaultCommandData& cmd);
+        void set_mode_(const DefaultCommandData& cmd);
+        bool set_mode_sim_internal_(const DefaultCommandData& cmd);
+        bool set_mode_chip_internal_(const DefaultCommandData& cmd);
+
+        void send_result_(bool result);
 
         static void add_zero_(SafeString& tmp, uint8_t value);
 };

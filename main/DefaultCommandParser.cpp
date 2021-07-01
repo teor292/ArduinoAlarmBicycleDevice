@@ -74,6 +74,14 @@ DefaultCommandData DefaultCommandParser::parse_set_mode_(SafeString& sms_string,
     {
         return parse_set_mode_chip_(sms_string, source_phone);
     }
+    if (sms_string == SLEEP)
+    {
+        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE, source_phone, WORK_MODE::SLEEP};
+    }
+    if (sms_string == DEF)
+    {
+        return DefaultCommandData{DEFAULT_COMMANDS::SET_MODE, source_phone, WORK_MODE::STANDART};
+    }
 
     return DefaultCommandData{source_phone};
 }

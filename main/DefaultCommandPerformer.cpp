@@ -82,6 +82,9 @@ void DefaultCommandPerformer::PerformCommand(const DefaultCommandData& cmd)
     case DEFAULT_COMMANDS::SET_MODE_CHIP:
         set_mode_chip_(cmd);
         break;
+    case DEFAULT_COMMANDS::SET_MODE:
+        set_mode_(cmd);
+        break;
     case DEFAULT_COMMANDS::GET_MODE:
         get_mode_(cmd);
         break;
@@ -125,46 +128,76 @@ void DefaultCommandPerformer::get_mode_(const DefaultCommandData& cmd)
     sms_.SendSms(tmp.c_str());
 }
 
-void DefaultCommandPerformer::set_mode_sim_(const DefaultCommandData& cmd)
+void DefaultCommandPerformer::send_result_(bool result)
+{
+    if (result)
+    {
+        sms_.SendSms(OK);
+    }
+    else
+    {
+        sms_.SendSms(ERROR);
+    }
+}
+
+void DefaultCommandPerformer::set_mode_(const DefaultCommandData& cmd)
+{
+    auto result = set_mode_sim_internal_(cmd);
+    if (!result)
+    {
+        sms_.SendSms(ERROR);
+        return;
+    }
+    result = set_mode_chip_internal_(cmd);
+    send_result_(result);
+}
+
+bool DefaultCommandPerformer::set_mode_sim_internal_(const DefaultCommandData& cmd)
 {
     if (WORK_MODE::SLEEP == cmd.work_mode)
     {
         if (PerformSim800Command(sim800_, reader_, SLEEP_MODE_COMMAND))
         {
             sim800_.SetMode(WORK_MODE::SLEEP);
-            sms_.SendSms(OK);
             last_enter_sleep_time_ = 0;
-            return;
+            return true;
         }
-        sms_.SendSms(ERROR);
-        return;
+        return false;
     }
     if (WORK_MODE::STANDART == cmd.work_mode)
     {
         if (PerformSim800Command(sim800_, reader_, DEFAULT_MODE_COMMAND))
         {
             sim800_.SetMode(WORK_MODE::STANDART);
-            sms_.SendSms(OK);
-            return;
+            return true;
         } 
-        sms_.SendSms(ERROR);
-        return;
+        return false;
     }
 
-    sms_.SendSms(ERROR);
-
+    return false;
 }
 
-void DefaultCommandPerformer::set_mode_chip_(const DefaultCommandData& cmd)
+bool DefaultCommandPerformer::set_mode_chip_internal_(const DefaultCommandData& cmd)
 {
     if (WORK_MODE::SLEEP == cmd.work_mode
         || WORK_MODE::STANDART == cmd.work_mode)
     {
         ControllerSleeper::SetMode(cmd.work_mode);
-        sms_.SendSms(OK);
-        return;
+        return true;
     }
-    sms_.SendSms(ERROR);
+    return false;
+}
+
+void DefaultCommandPerformer::set_mode_sim_(const DefaultCommandData& cmd)
+{
+    auto result = set_mode_sim_internal_(cmd);
+    send_result_(result);
+}
+
+void DefaultCommandPerformer::set_mode_chip_(const DefaultCommandData& cmd)
+{
+    auto result = set_mode_chip_internal_(cmd);
+    send_result_(result);
 }
 
 void DefaultCommandPerformer::get_alarm_sensity_(const DefaultCommandData& cmd)

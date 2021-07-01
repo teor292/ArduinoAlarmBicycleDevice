@@ -18,6 +18,7 @@ enum class DEFAULT_COMMANDS
     GET_ALARM_SENSITY, //sms: get alarm sensity
     SET_MODE_SIM, //sms like: set mode sim def/sleep
     SET_MODE_CHIP, //sms like: set mode chip def/sleep
+    SET_MODE, //(for sim && chip) sms like: set mode def/sleep
     GET_MODE, //sms: get mode
     INVALID
 };
