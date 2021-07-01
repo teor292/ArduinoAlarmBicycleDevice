@@ -28,4 +28,6 @@ class Sms
         SafeString& g_string_;
 
         Phone phone_;
+
+        bool sens_sms_one_(const char *text);
 };

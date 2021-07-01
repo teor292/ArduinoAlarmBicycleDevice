@@ -20,6 +20,15 @@ void Sms::DeleteAllSms(SafeString& buffer)
 
 void Sms::SendSms(const char *text)
 {
+  //Sometimes an error occurs when send.
+  //The reason of such behaviour is not clear. So try to send with 2 attempts.
+  for (int i = 0; i < 2; ++i)
+  {
+    if (send_sms_one_(text)) return;
+  }
+}
+bool Sms::sens_sms_one_(const char *text)
+{
     static const char AT_CMGS[] = "AT+CMGS=";
    // int count_new_lines = count_new_lines_plus_one(text);
     serial_.print(AT_CMGS);
@@ -45,23 +54,19 @@ void Sms::SendSms(const char *text)
     {
         PRINTLN(F("FRSMSRP"));
         PRINTLN(g_string_);
-        return;
+        return false;
     }
     PRINTLN(g_string_);
-    #if defined(DEBUG)
 
     auto index = g_string_.indexOf("OK");
     if (-1 == index)
     {
       PRINTLN(F("SMS FAIL"));
-    } else
-    {
-      PRINTLN(F("SMS OK"));
+      return false;
     }
-    #endif
 
-
-    
+    PRINTLN(F("SMS OK"));
+    return true;
 }
 
 
