@@ -244,6 +244,10 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
         {
             return GPSCommandData{GPS_COMMANDS::INVALID};
         }
+        if (86400 < time_delay_interval)
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
         sms_string.substring(sms_string, tmp_index + 1);
         tmp_index = sms_string.indexOf(' ');
         if (-1 == tmp_index)
@@ -255,6 +259,10 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
             sms_string.substring(time_str, 0, tmp_index);
         }
         if (!parse_time_(time_str, time_not_send_interval))
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
+        if (86400 < time_not_send_interval)
         {
             return GPSCommandData{GPS_COMMANDS::INVALID};
         }

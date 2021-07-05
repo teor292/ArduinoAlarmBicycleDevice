@@ -6,6 +6,7 @@
 
 #include "GPSAbstractSender.h"
 #include "TinyGPS_time.h"
+#include "GPSIntervalWaiter.h"
 
 //this class helps send gps data
 //the sending period is counted from the last sending
@@ -32,6 +33,8 @@ class GPSTimeWrapperSender
         //if false -> time of this sender must considered
         //if true -> last gps data is invalid, mode is PSM -> do not cosidered
         bool is_last_check_non_valid_{false};
+
+        GPSIntervalWaiter waiter_;
 
     
 };

@@ -137,6 +137,11 @@ struct SendSettingData
         //the time period (seconds) at which the coordinates are considered valid
         uint32_t valid_time{0};
 
+        //delay before non send interval in seconds
+        uint32_t interval_delay_time{0};
+        //non send interval period in seconds
+        uint32_t interval_not_send_time{0};
+
         uint32_t GetSendTimeMs() const
         {
             return send_time * 1000UL;
