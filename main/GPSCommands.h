@@ -18,7 +18,8 @@ enum class GPS_COMMANDS
     GET_GPS_FIX, //sms: get gps fix
     SET_GPS_VIBRO, //sms like: set gps vibro on/max/off [60-600/1m-10m] 
     GET_GPS_VIBRO, //sms: get gps vibro
-    SET_GPS_SMS_SEND, //sms like: set gps send sms me/phone 300-86400/5m-1440m/1h-24h [age 5-3600/1m-60m/1h]
+    SET_GPS_SMS_SEND, //sms like: set gps send sms me/phone 300-86400/5m-1440m/1h-24h [interval 0 86400] [age 5-3600/1m-60m/1h]
+    //interval => after 'x' time will not send for 'y' time
     GET_GPS_SMS_SEND, //sms like: get gps send sms
     SET_GPS_REMOVE_SMS_SEND, //sms like: set gps send sms remove me/phone
     // SET_GPS_SMS_ALARM, //sms like: set gps send sms alarm me/phone on/off
@@ -46,6 +47,15 @@ struct GPSCommandData
         uint32_t age_time{0};
         GPS_ALARM_MODE alarm_mode;
     };
+    union
+    {
+        struct
+        {
+            uint32_t interval_delay_time{0};
+            uint32_t interval_not_send_time{0};
+        };
+
+    };
 
     explicit GPSCommandData(GPS_COMMANDS command)
         : cmd(command)
@@ -66,12 +76,17 @@ struct GPSCommandData
         alarm_mode(mode)
     {}
 
-    explicit GPSCommandData(GPS_COMMANDS command, uint32_t time, const Phone& phone, const Phone& dst_phone, uint32_t age = 0)
+    explicit GPSCommandData(GPS_COMMANDS command, uint32_t time, const Phone& phone, const Phone& dst_phone, 
+        uint32_t age = 0,
+        uint32_t time_delay = 0,
+        uint32_t time_wait = 0)
         : cmd(command),
         update_time(time),
         phone(phone),
         dst_phone(dst_phone),
-        age_time(age)
+        age_time(age),
+        interval_delay_time(time_delay),
+        interval_not_send_time(time_wait)
 
     {}
 
@@ -81,6 +96,8 @@ struct GPSCommandData
         update_time = data.update_time;
         phone = data.phone;
         age_time = data.age_time;
+        interval_delay_time = data.interval_delay_time;
+        interval_not_send_time = data.interval_not_send_time;
         return (*this);
     }
 };  

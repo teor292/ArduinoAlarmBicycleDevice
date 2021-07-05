@@ -19,6 +19,7 @@ const char AGE[] = "age";
 const char SETTINGS[] = "settings";
 const char DEVICE[] = "device";
 const char REMOVE[] = "remove";
+const char INTERVAL[] = "interval";
 
 namespace
 {
@@ -227,6 +228,44 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
         return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, source_phone, dst_phone};
     }
     sms_string.substring(sms_string, tmp_index + 1);
+    
+    uint32_t time_delay_interval = 0;
+    uint32_t time_not_send_interval = 0;
+    if (sms_string.startsWith(INTERVAL))
+    {
+        sms_string.substring(sms_string, sizeof(INTERVAL));
+        tmp_index = sms_string.indexOf(' ');
+        if (-1 == tmp_index)
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
+        sms_string.substring(time_str, 0, tmp_index);
+        if (!parse_time_(time_str, time_delay_interval))
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
+        sms_string.substring(sms_string, tmp_index + 1);
+        tmp_index = sms_string.indexOf(' ');
+        if (-1 == tmp_index)
+        {
+            time_str = sms_string;
+        } 
+        else
+        {
+            sms_string.substring(time_str, 0, tmp_index);
+        }
+        if (!parse_time_(time_str, time_not_send_interval))
+        {
+            return GPSCommandData{GPS_COMMANDS::INVALID};
+        }
+        if (-1 == tmp_index)
+        {
+            return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, source_phone, dst_phone, 0, 
+                time_delay_interval, time_not_send_interval};
+        }
+        sms_string.substring(sms_string, tmp_index + 1);
+    }
+
     if (!sms_string.startsWith(AGE))
     {
         return GPSCommandData{GPS_COMMANDS::INVALID};
@@ -241,7 +280,8 @@ GPSCommandData GPSCommandParser::parse_set_send_(SafeString& sms_string, Phone& 
     {
         return GPSCommandData{GPS_COMMANDS::INVALID};
     }
-    return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, source_phone, dst_phone, age_time};
+    return GPSCommandData{GPS_COMMANDS::SET_GPS_SMS_SEND, time, source_phone, dst_phone, age_time, 
+        time_delay_interval, time_not_send_interval};
 
 }
 
