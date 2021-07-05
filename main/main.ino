@@ -56,7 +56,7 @@ MillisReadDelay time_delay(SIM800, wait_callback_for_gps_read);
 BlockTimeReader reader(time_delay);
 BatteryReader battery(test_string, SIM800, reader);
 BatteryChecker battery_checker(battery);
-Sms sms_one(SIM800, reader, test_string);
+Sms sms_one(SIM800, reader, test_string, wait_callback_for_gps_read);
 
 VibroReader vibro_reader(VIBRO_PIN);
 void vibro_changed_alarm_sms_callback(bool alarm_enable);
@@ -166,7 +166,7 @@ void setup()
 
   #if defined(__SAMD21G18A__)
   //initialization of usb serial
-  for (int i = 0; i < 10 && !Serial1; ++i)
+  for (int i = 0; i < 10 && !Serial; ++i)
   {
     delay(100);
   }        
@@ -193,7 +193,7 @@ void setup()
   //if sim800 in sleep mode and we use standart ->
   //we get nothing. But if it in standart mode and
   //we use sleep -> everything will be OK
-  SIM800.SetMode(WORK_MODE::SLEEP);     
+  SIM800.SetMode(WORK_MODE::SLEEP);  
 
   perform_command("AT");
  // Serial1.
@@ -203,7 +203,6 @@ void setup()
   //wait 10 seconds for initialization of SIM800L is complete
   //if continue without delay -> multiple unsolicit result codes (URC) will come 
   delay(10000); 
-
   //it would be some lines after initialization in buffer:
   //0. RDY
   //1. +CFUN: 1
@@ -215,9 +214,9 @@ void setup()
   for ( unsigned char i = 0; i < 5; ++i)
   {
     reader.ReadLine(test_string, 1000);
-  }     
+  }    
   //detect current mode and set default
-  detect_sim800_mode_and_set_def();
+  detect_sim800_mode_and_set_def(); 
 
   #if defined(SIM800_INITIALIZATION)
 
@@ -243,6 +242,8 @@ void setup()
 
   //load admin phone
   adminer.LoadAdminPhone(test_string);
+
+
 
 #ifdef DEBUG
 

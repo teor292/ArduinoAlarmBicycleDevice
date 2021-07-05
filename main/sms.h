@@ -13,7 +13,7 @@ class Sms
 {
     public:
 
-        explicit Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string);
+        explicit Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string,  WaitCallback callback = nullptr);
 
         void DeleteAllSms(SafeString& buffer);
 
@@ -26,8 +26,11 @@ class Sms
         Stream &serial_;
         BlockTimeReader& reader_;
         SafeString& g_string_;
+        WaitCallback callback_;
 
         Phone phone_;
 
         bool send_sms_one_(const char *text);
+
+        void wait_for_(int time_ms);
 };

@@ -1,9 +1,12 @@
 #include "sms.h"
+#include <millisDelay.h>
 
-Sms::Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string) 
+Sms::Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string,
+  WaitCallback callback) 
  : serial_(serial),
    reader_(reader),
-   g_string_(g_string)
+   g_string_(g_string),
+   callback_(callback)
 {}
 
 
@@ -46,7 +49,11 @@ bool Sms::send_sms_one_(const char *text)
     PRINTLN(F("AT::::"));
     PRINT(g_string_);
 
+    wait_for_(100); //test
+
     serial_.print(text);
+
+    wait_for_(100);
 
     serial_.write(26);
 
@@ -73,4 +80,17 @@ bool Sms::send_sms_one_(const char *text)
 void Sms::SetPhone(const char* phone)
 {
   phone_ = phone;
+}
+
+void Sms::wait_for_(int time_ms)
+{
+    millisDelay tmp_delay;
+    tmp_delay.start(time_ms);
+    while (!tmp_delay.justFinished())
+    {
+      if (nullptr != callback_)
+      {
+        callback_();
+      }
+    }
 }
