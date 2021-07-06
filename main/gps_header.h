@@ -162,6 +162,11 @@ class SendSettings
         SenderData send_data;
 
         void SetSendTime(uint32_t send_time);
+        void SetIntervalTimes(uint32_t delay_time, uint32_t not_send_time)
+        {
+            data_.interval_delay_time = delay_time;
+            data_.interval_not_send_time = not_send_time;
+        }
         void SetValidTime(uint32_t valid_time)
         {
             data_.valid_time = valid_time;

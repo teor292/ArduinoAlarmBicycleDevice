@@ -212,6 +212,10 @@ void GPSWorker::set_gps_send_sms_(const GPSCommandData& command)
     {
         settings.SetValidTime(command.age_time);
     }
+    if (0 != command.interval_not_send_time)
+    {
+        settings.SetIntervalTimes(command.interval_delay_time, command.interval_not_send_time);
+    }
     settings_.AddOrUpdateSendSettings(settings);
     settings_.Save();
     sms_send_manager_.AddOrUpdateSender(settings);
