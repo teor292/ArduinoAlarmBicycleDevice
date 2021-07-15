@@ -11,10 +11,10 @@ VibroStater::VibroStater(VibroAlarmChangeCallback callback)
 {
 }
 
-void VibroStater::Alarm(bool alarm) 
+void VibroStater::Alarm() 
 {
     if (!enabled_) return;
-    is_alarm_ |= alarm;
+    is_alarm_ = true;
 }
 
 bool VibroStater::Update()

@@ -18,7 +18,7 @@ class VibroStater : public AbstractVibroCallback
             return enabled_;
         }
 
-        void Alarm(bool alarm) override;
+        void Alarm() override;
 
     private:
 

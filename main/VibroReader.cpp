@@ -3,6 +3,15 @@
 #include <Arduino.h>
 #include "time_utils.h"
 
+extern VibroReader vibro_reader;
+
+void int_alarm()
+{
+    PRINTLN("A");
+  vibro_reader.ForceChange();
+}
+
+
 VibroReader::VibroReader(int input)
     : VIBRO_INPUT(input)
 {
@@ -25,26 +34,26 @@ void VibroReader::ForceChange()
 void VibroReader::ReadChange()
 {
     if (!enabled_) return;
-    //reset every one second
+
     auto current_time = time();
+
+    if (current_count_changes_ > count_changes_per_second_)
+    {
+        for (auto& callback : callbacks_)
+        {
+            callback->Alarm();
+        }
+        last_millis_ = current_time;
+        current_count_changes_ = 0;
+        return;
+    }
+
     if (current_time - last_millis_ > s_to_time(1))
     {
         last_millis_ = current_time;
         current_count_changes_ = 0;
     }
 
-    previous_state_ = current_state_;
-    current_state_ = static_cast<unsigned char>(digitalRead(VIBRO_INPUT)); 
-
-    if (current_state_ != previous_state_)
-    {
-        PRINTLN("VIBRO");
-        ++current_count_changes_;
-    }
-    for (auto& callback : callbacks_)
-    {
-        callback->Alarm(current_count_changes_ > count_changes_per_second_);
-    }
 }
 
 void VibroReader::SetCountChanges(int count_changes_per_second)
@@ -56,6 +65,14 @@ void VibroReader::EnableAlarm(bool enable)
 {
     enabled_ = enable;
     current_state_ = static_cast<unsigned char>(digitalRead(VIBRO_INPUT));
+    if (enabled_)
+    {
+        attachInterrupt(VIBRO_INPUT, int_alarm, CHANGE);
+    }
+    else
+    {
+        detachInterrupt(VIBRO_INPUT);
+    }
 }
 
 uint32_t VibroReader::NextNeccessaryDiffTime(uint32_t current_time)

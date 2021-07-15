@@ -8,7 +8,7 @@ class AbstractVibroCallback
 {
     public:
         virtual ~AbstractVibroCallback(){}
-        virtual void Alarm(bool alarm) = 0;
+        virtual void Alarm() = 0;
 };
 
 //inherit this class from AbstractNextAwakeTimeGetter for ControllerSleep logic:

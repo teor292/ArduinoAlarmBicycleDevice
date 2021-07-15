@@ -1,4 +1,8 @@
 #include "GPSIntervalWaiter.h"
+
+#if defined(GPS)
+
+
 #include "time_utils.h"
 #include "header.h"
 
@@ -102,3 +106,5 @@ GPS_INTERVAL_STATUS GPSIntervalWaiter::wait_update_(uint32_t current_time)
     PRINTLN(F("WAIT COMPARE"));
     return GPS_INTERVAL_STATUS::WAIT;
 }
+
+#endif

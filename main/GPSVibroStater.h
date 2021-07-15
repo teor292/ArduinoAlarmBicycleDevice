@@ -10,7 +10,7 @@ class GPSVibroStater : public AbstractVibroCallback
 {
     public:
 
-        void Alarm(bool alarm) override;
+        void Alarm() override;
         void EnableAlarm(bool enable);
         bool IsAlarm();
     

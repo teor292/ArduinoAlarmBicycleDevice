@@ -2,10 +2,10 @@
 
 #if defined(GPS)
 
-void GPSVibroStater::Alarm(bool alarm)
+void GPSVibroStater::Alarm()
 {
     if (!enabled_) return;
-    is_alarm_ |= alarm;
+    is_alarm_ = true;
 }
 
 void GPSVibroStater::EnableAlarm(bool enable)
