@@ -49,11 +49,13 @@ bool Sms::send_sms_one_(const char *text)
     PRINTLN(F("AT::::"));
     PRINT(g_string_);
 
-    wait_for_(100); //test
+    //sim800 sometimes do not send sms
+    //need delay for successfull sending?
+    wait_for_(500);
 
     serial_.print(text);
 
-    wait_for_(100);
+    wait_for_(500);
 
     serial_.write(26);
 
