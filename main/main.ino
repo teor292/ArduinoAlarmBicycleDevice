@@ -26,7 +26,9 @@
 #include "SAMDLowPower.h"
 #include "ControllerSleeper.h"
 #include "time_utils.h"
+#include "Caller.h"
 
+//when first usage it is neccessary to uncomment this line
 //#define SIM800_INITIALIZATION
 
 //if change baud rate -> change command AT+IPR!!!
@@ -63,6 +65,10 @@ VibroReader vibro_reader(VIBRO_PIN);
 void vibro_changed_alarm_sms_callback(bool alarm_enable);
 VibroStater vibro(vibro_changed_alarm_sms_callback);
 BookReader adminer(SIM800, reader);
+
+#if defined(CALL_ON_ALARM)
+Caller caller(SIM800, reader, test_string);
+#endif
 
 
 const char OK[] = "OK";
@@ -234,6 +240,9 @@ void setup()
     delay(1000);
   }
 
+  //only for call (Caller class)
+  perform_command("AT+CLCC=1");
+
   perform_command("AT&W");
 
   #endif
@@ -346,15 +355,21 @@ void perform_command(const char* command)
 
 bool set_sms_mode(const char *mode)
 {
-  SIM800.println(mode);
-  if (!reader.ReadStatusResponse(test_string, 5000))
+  bool result = false;
+  //sometimes sms mode do not set, don't know why
+  for ( int i = 0; i < 2 && !result; ++i)
   {
-    PRINTLN(F("Read until failed"));
-    PRINTLN(test_string);
-    return false;
+    SIM800.println(mode);
+    if (!reader.ReadStatusResponse(test_string, 5000))
+    {
+      PRINTLN(F("Read until failed"));
+      PRINTLN(test_string);
+      continue;
+    }
+    result = -1 != test_string.indexOf(OK);
   }
 
-  return -1 != test_string.indexOf(OK);
+  return result;
 }
 
 void clear_buffer()
@@ -372,15 +387,20 @@ void do_vibro()
     && vibro.Update()
     && !adminer.IsEmpty())
   {
-      if (!set_sms_mode(SILINCE_MODE))
-      {
-        PRINTLN(F("!sms mode"));
-        return;
-      }
-      clear_buffer();
-      sms_one.SetPhone(adminer.GetAdminPhone());
-      sms_one.SendSms(VIBRO_ALARM);
-      set_sms_mode(CMT_MODE);
+#if defined(CALL_ON_ALARM)
+    caller.MakeCall(adminer.GetAdminPhone());
+#else
+    if (!set_sms_mode(SILINCE_MODE))
+    {
+      PRINTLN(F("!sms mode"));
+      return;
+    }
+    clear_buffer();
+    sms_one.SetPhone(adminer.GetAdminPhone());
+    sms_one.SendSms(VIBRO_ALARM);
+    set_sms_mode(CMT_MODE);
+#endif
+
   }
 }
 

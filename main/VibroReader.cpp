@@ -5,9 +5,16 @@
 
 extern VibroReader vibro_reader;
 
+//when attach interrupt -> interrupt comes don't know why
+static bool first_interrupt = true;
 void int_alarm()
 {
     PRINTLN("A");
+    if (first_interrupt)
+    {
+        first_interrupt = false;
+        return;
+    }
   vibro_reader.ForceChange();
 }
 

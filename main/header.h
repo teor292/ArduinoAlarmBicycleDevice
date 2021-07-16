@@ -32,3 +32,6 @@
 
 #define PHONE_BUF_LENGTH 19
 #define SMS_BUF 255
+
+//if defined -> call on alarm instead sms
+#define CALL_ON_ALARM
