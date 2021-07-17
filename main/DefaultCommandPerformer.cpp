@@ -160,6 +160,8 @@ bool DefaultCommandPerformer::set_mode_sim_internal_(const DefaultCommandData& c
         {
             sim800_.SetMode(WORK_MODE::SLEEP);
             last_enter_sleep_time_ = 0;
+            //disable alarm if sleep sim
+            set_alarm_internal_(false);
             return true;
         }
         return false;
@@ -228,10 +230,15 @@ void DefaultCommandPerformer::get_alarm_(const DefaultCommandData& cmd)
 
 void DefaultCommandPerformer::set_alarm_and_sms_(bool alarm)
 {
+    set_alarm_internal_(alarm);
+    sms_.SendSms(OK);
+}
+
+void DefaultCommandPerformer::set_alarm_internal_(bool alarm)
+{
     settings_.alarm = alarm;
     settings_.Save();
     vibro_.EnableAlarm(alarm);
-    sms_.SendSms(OK);
 }
 
 void DefaultCommandPerformer::set_alarm_(const DefaultCommandData& cmd)

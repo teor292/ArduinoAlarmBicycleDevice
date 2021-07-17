@@ -29,7 +29,7 @@
 #include "Caller.h"
 
 //when first usage it is neccessary to uncomment this line
-//#define SIM800_INITIALIZATION
+#define SIM800_INITIALIZATION
 
 //if change baud rate -> change command AT+IPR!!!
 const uint32_t GPSBaud = 9600;
@@ -357,8 +357,9 @@ bool set_sms_mode(const char *mode)
 {
   bool result = false;
   //sometimes sms mode do not set, don't know why
-  for ( int i = 0; i < 2 && !result; ++i)
+  for ( int i = 0; i < 3 && !result; ++i)
   {
+    PRINTLN(F("[sms mode]"));
     SIM800.println(mode);
     if (!reader.ReadStatusResponse(test_string, 5000))
     {
@@ -380,16 +381,8 @@ void clear_buffer()
   }
 }
 
-void do_vibro()
-{  
-  vibro_reader.ReadChange();
-  if (!f_extern_interrupt
-    && vibro.Update()
-    && !adminer.IsEmpty())
-  {
-#if defined(CALL_ON_ALARM)
-    caller.MakeCall(adminer.GetAdminPhone());
-#else
+void send_vibro_sms()
+{
     if (!set_sms_mode(SILINCE_MODE))
     {
       PRINTLN(F("!sms mode"));
@@ -399,6 +392,23 @@ void do_vibro()
     sms_one.SetPhone(adminer.GetAdminPhone());
     sms_one.SendSms(VIBRO_ALARM);
     set_sms_mode(CMT_MODE);
+}
+
+void do_vibro()
+{  
+  vibro_reader.ReadChange();
+  if (!f_extern_interrupt
+    && vibro.Update()
+    && !adminer.IsEmpty())
+  {
+#if defined(CALL_ON_ALARM)
+    //if call failed -> send sms
+    if (!caller.MakeCall(adminer.GetAdminPhone()))
+    {
+      send_vibro_sms();
+    }
+#else
+    send_vibro_sms();
 #endif
 
   }
@@ -511,12 +521,14 @@ void loop()
     //clear buffer if it contains some data
     clear_buffer();
     EXIT_SCOPE_SIMPLE(
+      PRINTLN(F("[EX scope]"));
       sms_one.DeleteAllSms(test_string);
       set_sms_mode(CMT_MODE);
       );
     if (SMS_DATA_TYPE::DEFAULT_CMD == result.type)
     {
       cmd_performer.PerformCommand(result.cmd.default_command);
+      PRINTLN(F("[EX CMD]"));
     }
     #if defined(GPS)
     else if (SMS_DATA_TYPE::GPS_CMD == result.type)

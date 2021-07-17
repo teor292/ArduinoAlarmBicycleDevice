@@ -53,6 +53,7 @@ class DefaultCommandPerformer
         void get_low_battery_(const DefaultCommandData& cmd);
         void set_alarm_(const DefaultCommandData& cmd);
         void set_alarm_and_sms_(bool alarm);
+        void set_alarm_internal_(bool alarm);
         void get_alarm_(const DefaultCommandData& cmd);
         void set_alarm_sensity_(const DefaultCommandData& cmd);
         void get_alarm_sensity_(const DefaultCommandData& cmd);

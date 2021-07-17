@@ -11,7 +11,8 @@ class BlockTimeReader
 
         explicit BlockTimeReader(MillisReadDelay& millis);
 
-        bool ReadStatusResponse(SafeString& result, const int timeout);
+        bool ReadStatusResponse(SafeString& result, const int timeout, 
+            const char *ok = nullptr, const char* error = nullptr);
         bool ReadLine(SafeString& test_string, const int timeout);
         bool NClReadLine(SafeString& test_string, const int timeout);
         bool ReadUntil(SafeString& buffer, const int timeout, const char *what);

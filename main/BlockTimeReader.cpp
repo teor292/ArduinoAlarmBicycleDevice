@@ -5,8 +5,19 @@ BlockTimeReader::BlockTimeReader(MillisReadDelay& millis)
  {}
 
 
-bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
+bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout,
+     const char *ok, const char* error)
 {
+    const char *OK = ok;
+    if (nullptr == OK)
+    {
+        OK = "OK";
+    }
+    const char *ERROR = error;
+    if (nullptr == ERROR)
+    {
+        ERROR = "ERROR";
+    }
     //must ignore input and get count end of line after input
     result.clear();
     millis_.start(timeout);
@@ -17,8 +28,8 @@ bool BlockTimeReader::ReadStatusResponse(SafeString& result, const int timeout)
         result += c;
         if (10 == c) //LF
         {
-            auto index1 = result.indexOf("OK");
-            auto index2 = result.indexOf("ERROR");
+            auto index1 = result.indexOf(OK);
+            auto index2 = result.indexOf(ERROR);
             if (-1 != index1 
                 || -1 != index2)
             {

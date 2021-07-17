@@ -8,7 +8,7 @@ Caller::Caller(Stream& sim800, BlockTimeReader& reader, SafeString& buffer)
     buffer_(buffer)
 {}
 
-void Caller::MakeCall(const char *phone)
+bool Caller::MakeCall(const char *phone)
 {
     const static char ATH[] = "ATH";
 
@@ -26,7 +26,7 @@ void Caller::MakeCall(const char *phone)
     sim800_.print(F("ATD"));
     sim800_.print(tmp.c_str());
     sim800_.println(';');
-    if (!reader_.ReadStatusResponse(buffer_, 20000)) return;
+    if (!reader_.ReadStatusResponse(buffer_, 20000)) return false;
 
     CLCC_CALL_STATE current_state = CLCC_CALL_STATE::UNKNOWN;
 
@@ -43,26 +43,24 @@ void Caller::MakeCall(const char *phone)
     EXIT_SCOPE(exit_lambda);
 
     //must get DIALING state
-    if (!wait_for_clcc_()) return;
+    if (!wait_for_clcc_()) return false;
 
     current_state = CLCCParser::Parse(buffer_);
     
     //if not -> smth wrong (can't call)
-    if (CLCC_CALL_STATE::DIALING != current_state) return;
+    if (CLCC_CALL_STATE::DIALING != current_state) return false;
 
     //read for ALERTING state
-    if (!wait_for_clcc_()) return;
+    if (!wait_for_clcc_()) return false;
 
     current_state = CLCCParser::Parse(buffer_);
 
-    if (CLCC_CALL_STATE::ALERTING != current_state) return;
+    if (CLCC_CALL_STATE::ALERTING != current_state) return false;
 
     //wait for response or hang or smth else for 1 min
     //do not check because it doesn't matter
-    wait_for_clcc_(12);
-
-    //ATH on exit
-    return;
+    //ATG on exit
+    return wait_for_clcc_(12);
 }
 
 bool Caller::wait_for_clcc_(int attempts)
@@ -73,12 +71,15 @@ bool Caller::wait_for_clcc_(int attempts)
     {
         if (reader_.ReadLine(buffer_, 5000))
         {
+            //accept or hang
             if (buffer_.startsWith(CLCC)) return true;
-            if (buffer_.startsWith("+CME ERROR")) return false;
-            if (buffer_.startsWith("NO DIALTONE")) return false;
-            if (buffer_.startsWith("BUSY")) return false;
+            //hang (but CLCC must be first)
+            if (buffer_.startsWith("BUSY")) return true;
             if (buffer_.startsWith("NO CARRIER")) return false;
             if (buffer_.startsWith("NO ANSWER")) return false;
+            if (buffer_.startsWith("+CME ERROR")) return false;
+            if (buffer_.startsWith("NO DIALTONE")) return false;
+
         }
     }
     return false;

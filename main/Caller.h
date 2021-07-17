@@ -10,7 +10,7 @@ class Caller
 
         explicit Caller(Stream& sim800, BlockTimeReader& reader, SafeString& buffer);
 
-        void MakeCall(const char *phone);
+        bool MakeCall(const char *phone);
 
     private:
 

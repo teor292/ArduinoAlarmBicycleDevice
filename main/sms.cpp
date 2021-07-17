@@ -13,6 +13,7 @@ Sms::Sms(Stream &serial, BlockTimeReader& reader, SafeString& g_string,
 
 void Sms::DeleteAllSms(SafeString& buffer)
 {
+  PRINTLN(F("[DEL sms]"));
   buffer.clear();
   serial_.println("AT+CMGDA=\"DEL ALL\"");
   //nothing to do with error
@@ -33,6 +34,7 @@ void Sms::SendSms(const char *text)
 bool Sms::send_sms_one_(const char *text)
 {
     static const char AT_CMGS[] = "AT+CMGS=";
+    static const char CGMS[] = "+CMGS:";
    // int count_new_lines = count_new_lines_plus_one(text);
     serial_.print(AT_CMGS);
     serial_.println(phone_.phone);
@@ -59,7 +61,7 @@ bool Sms::send_sms_one_(const char *text)
 
     serial_.write(26);
 
-    if (!reader_.ReadStatusResponse(g_string_, 60000))
+    if (!reader_.ReadStatusResponse(g_string_, 60000, CGMS))
     {
         PRINTLN(F("FRSMSRP"));
         PRINTLN(g_string_);
@@ -67,13 +69,14 @@ bool Sms::send_sms_one_(const char *text)
     }
     PRINTLN(g_string_);
 
-    auto index = g_string_.indexOf("OK");
+    auto index = g_string_.indexOf(CGMS);
     if (-1 == index)
     {
       PRINTLN(F("SMS FAIL"));
       return false;
     }
-
+    //read OK
+    reader_.ReadStatusResponse(g_string_, 1000);
     PRINTLN(F("SMS OK"));
     return true;
 }
