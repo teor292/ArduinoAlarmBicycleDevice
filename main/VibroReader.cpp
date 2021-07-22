@@ -18,11 +18,30 @@ void int_alarm()
   vibro_reader.ForceChange();
 }
 
-
-VibroReader::VibroReader(int input)
-    : VIBRO_INPUT(input)
+static bool first_interrupt_2 = true;
+void int_alarm_2()
 {
-    pinMode(VIBRO_INPUT, INPUT); //vibro input
+    PRINTLN("B");
+    if (first_interrupt_2)
+    {
+        first_interrupt_2 = false;
+        return;
+    }
+  vibro_reader.ForceChange();
+}
+
+
+
+VibroReader::VibroReader(int input, int input_2)
+    : VIBRO_INPUT(input),
+    VIBRO_INPUT_2(input_2)
+{
+    pinMode(VIBRO_INPUT, INPUT_PULLUP); //vibro input
+
+    if (-1 != VIBRO_INPUT_2)
+    {
+        pinMode(VIBRO_INPUT_2, INPUT_PULLUP);
+    }
 }
 
 bool VibroReader::AddVibroCallback(AbstractVibroCallback* callback)
@@ -71,14 +90,22 @@ void VibroReader::SetCountChanges(int count_changes_per_second)
 void VibroReader::EnableAlarm(bool enable)
 {
     enabled_ = enable;
-    current_state_ = static_cast<unsigned char>(digitalRead(VIBRO_INPUT));
+
     if (enabled_)
     {
         attachInterrupt(VIBRO_INPUT, int_alarm, CHANGE);
+        if (-1 != VIBRO_INPUT_2)
+        {
+            attachInterrupt(VIBRO_INPUT_2, int_alarm_2, CHANGE);
+        }
     }
     else
     {
         detachInterrupt(VIBRO_INPUT);
+        if (-1 != VIBRO_INPUT_2)
+        {
+            detachInterrupt(VIBRO_INPUT_2);
+        }
     }
 }
 

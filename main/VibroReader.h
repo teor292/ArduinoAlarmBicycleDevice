@@ -17,7 +17,7 @@ class VibroReader : public AbstractNextAwakeTimeGetter
 {
     public:
 
-        explicit VibroReader(int input);
+        explicit VibroReader(int input, int input_2 = -1);
 
         bool AddVibroCallback(AbstractVibroCallback* callback);
 
@@ -40,11 +40,10 @@ class VibroReader : public AbstractNextAwakeTimeGetter
     private:
 
         const int VIBRO_INPUT;
+        const int VIBRO_INPUT_2;
         int count_changes_per_second_{0};
         int current_count_changes_{0};
         unsigned long last_millis_{0};
-        unsigned char previous_state_{0};
-        unsigned char current_state_{0};
         bool enabled_{true};
 
         Array<AbstractVibroCallback*, 2> callbacks_;

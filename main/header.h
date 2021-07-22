@@ -23,6 +23,8 @@
 #define AWAKE_SIM800_PIN 9
 #define VIBRO_PIN 8
 
+#define VIBRO_PIN_2 10
+
 #else
 
 #define AWAKE_SIM800_PIN 2

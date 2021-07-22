@@ -61,7 +61,12 @@ BatteryReader battery(test_string, SIM800, reader);
 BatteryChecker battery_checker(battery);
 Sms sms_one(SIM800, reader, test_string, wait_callback_for_gps_read);
 
+#if defined(VIBRO_PIN_2)
+VibroReader vibro_reader(VIBRO_PIN, VIBRO_PIN_2);
+#else
 VibroReader vibro_reader(VIBRO_PIN);
+#endif
+
 void vibro_changed_alarm_sms_callback(bool alarm_enable);
 VibroStater vibro(vibro_changed_alarm_sms_callback);
 BookReader adminer(SIM800, reader);
