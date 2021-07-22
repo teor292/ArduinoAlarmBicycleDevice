@@ -39,7 +39,7 @@ GPS_ERROR_CODES GPSDevice::SetModeSettings(UBX_CFG_PM2& settings)
     //1. Send message by default alg
     auto result = send_message_(settings);
     //currently do not save config:
-    //mode will be saved when rate is set
+    //mode settings will be saved when mode is set
     return result;
     //if (GPS_ERROR_CODES::OK != result) return result;
     
